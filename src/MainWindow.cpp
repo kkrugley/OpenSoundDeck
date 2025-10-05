@@ -16,43 +16,72 @@
 #include <QUrl>
 #include <QMediaPlayer>
 #include <QSlider>
+#include <QMenuBar>
+#include <QMenu>
+#include <QStatusBar>
+#include <QToolButton>
+#include <QLabel>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    // ... (Создание Actions и ToolBar остается без изменений) ...
+
+    m_metaDataReader = new QMediaPlayer(this);
+    connect(m_metaDataReader, &QMediaPlayer::durationChanged, this, &MainWindow::onDurationChanged);
+
+    // Exit action
+    m_exitAction = new QAction(tr("&Exit"), this);
+    m_exitAction->setShortcut(QKeySequence::Quit);
+
+    // Dropdown menu
+    m_fileMenu = menuBar()->addMenu(tr("&File"));
+    m_editMenu = menuBar()->addMenu(tr("&Edit"));
+    m_playMenu = menuBar()->addMenu(tr("&Play"));
+    m_windowMenu = menuBar()->addMenu(tr("&Window"));
+    m_helpMenu = menuBar()->addMenu(tr("&Help"));
+    
+    // 3. Dropdown File category
+    m_fileMenu->addAction(m_exitAction);
+
     m_playAction = new QAction(style()->standardIcon(QStyle::SP_MediaPlay), tr("Play"), this);
     m_pauseAction = new QAction(style()->standardIcon(QStyle::SP_MediaPause), tr("Pause"), this);
     m_stopAction = new QAction(style()->standardIcon(QStyle::SP_MediaStop), tr("Stop"), this);
-    m_metaDataReader = new QMediaPlayer(this);
 
     m_playbackToolBar = new QToolBar(tr("Playback"), this);
     m_playbackToolBar->addAction(m_playAction);
     m_playbackToolBar->addAction(m_pauseAction);
     m_playbackToolBar->addAction(m_stopAction);
+
+    m_progressSlider = new QSlider(Qt::Horizontal, this);
+    m_playbackToolBar->addWidget(m_progressSlider);
+
+    QWidget* spacer = new QWidget();
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    m_playbackToolBar->addWidget(spacer);
+
+    m_headphonesVolumeSlider = new QSlider(Qt::Vertical, this);
+    m_micVolumeSlider = new QSlider(Qt::Vertical, this);
+
+    m_headphonesVolumeSlider->setMaximumHeight(40);
+    m_micVolumeSlider->setMaximumHeight(40);
+    m_playbackToolBar->addWidget(m_headphonesVolumeSlider);
+    m_playbackToolBar->addWidget(m_micVolumeSlider);
+    
     addToolBar(m_playbackToolBar);
     
-    connect(m_metaDataReader, &QMediaPlayer::durationChanged, this, &MainWindow::onDurationChanged);
-    
-    // --- Центральный виджет ---
     QWidget *centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
     
-    m_soundTableWidget = new QTableWidget(); // Создаем без родителя
-    
-    // УДАЛЯЕМ ВСЕ, ЧТО СВЯЗАНО С КНОПКАМИ И buttonLayout
-    
+    m_soundTableWidget = new QTableWidget();
+ 
     mainLayout->addWidget(m_soundTableWidget);
     
-    // --- Настройка таблицы ---
-    // *** ДОБАВЛЯЕМ ДВЕ СТРОКИ ДЛЯ DRAG & DROP ***
-    setAcceptDrops(true); // Разрешаем принимать "брошенные" объекты на все окно
-    m_soundTableWidget->setAcceptDrops(true); // И на саму таблицу тоже
+    setAcceptDrops(true); 
+    m_soundTableWidget->setAcceptDrops(true);
     
     m_soundTableWidget->setColumnCount(4);
-    // ... (остальная настройка таблицы без изменений) ...
     m_soundTableWidget->setHorizontalHeaderLabels({tr("Index"), tr("Tag"), tr("Duration"), tr("Hotkey")});
     m_soundTableWidget->verticalHeader()->setVisible(false);
     m_soundTableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
@@ -63,41 +92,67 @@ MainWindow::MainWindow(QWidget *parent)
     m_soundTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_soundTableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
 
-    // --- Соединение сигналов и слотов ---
-    // УДАЛЯЕМ connect для старых кнопок
     connect(m_playAction, &QAction::triggered, this, &MainWindow::onPlayClicked);
     connect(m_pauseAction, &QAction::triggered, this, &MainWindow::onPauseClicked);
     connect(m_stopAction, &QAction::triggered, this, &MainWindow::onStopClicked);
     
-    // ... (Настройки окна без изменений) ...
+    connect(m_progressSlider, &QSlider::sliderMoved, this, &MainWindow::onProgressSliderMoved);
+    connect(m_headphonesVolumeSlider, &QSlider::valueChanged, this, &MainWindow::onHeadphonesVolumeChanged);
+    connect(m_micVolumeSlider, &QSlider::valueChanged, this, &MainWindow::onMicVolumeChanged);
+    connect(m_exitAction, &QAction::triggered, this, &MainWindow::onExitTriggered);
+    connect(m_headphonesButton, &QToolButton::toggled, this, &MainWindow::onHeadphonesToggle);
+    connect(m_allButton, &QToolButton::toggled, this, &MainWindow::onAllToggle);
+    connect(m_repeatButton, &QToolButton::toggled, this, &MainWindow::onRepeatToggle);
+
     setWindowTitle("OpenSoundDeck v0.1 (dev)");
     resize(800, 600);
     setMinimumSize(500, 400);
+
+    m_headphonesButton = new QToolButton(this);
+    m_headphonesButton->setText("H");
+    m_headphonesButton->setCheckable(true); // Делаем кнопку "залипающей"
+    m_headphonesButton->setChecked(true);   // Включаем по умолчанию
+    m_headphonesButton->setToolTip(tr("Output to headphones"));
+
+    m_allButton = new QToolButton(this);
+    m_allButton->setText("A");
+    m_allButton->setCheckable(true);
+    m_allButton->setChecked(true);
+    m_allButton->setToolTip(tr("Output to all (mic)"));
+
+    m_repeatButton = new QToolButton(this);
+    m_repeatButton->setText(QString::fromUtf8("↻")); // Используем символ Unicode
+    m_repeatButton->setCheckable(true);
+    m_repeatButton->setToolTip(tr("Repeat playback"));
+
+    m_statusLabel = new QLabel(tr("Ready"), this);
+    
+    // 2. Добавляем виджеты в строку состояния
+    // statusBar() сам создает QStatusBar, если его еще нет
+    statusBar()->addWidget(m_headphonesButton);
+    statusBar()->addWidget(m_allButton);
+    statusBar()->addWidget(m_statusLabel);
+
+    // addPermanentWidget добавляет виджет справа
+    statusBar()->addPermanentWidget(m_repeatButton);
 }
 
 MainWindow::~MainWindow() {}
 
-// --- НОВЫЕ ОБРАБОТЧИКИ СОБЫТИЙ ---
-
-// Этот метод вызывается, когда мышь с зажатым файлом ВХОДИТ в область окна
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
-    // Проверяем, содержит ли перетаскиваемый объект ссылки на файлы (URL)
+
     if (event->mimeData()->hasUrls()) {
-        // Если да, то "принимаем" событие. Курсор изменится, показывая, что сюда можно "бросать".
         event->acceptProposedAction();
     }
 }
 
-// Этот метод вызывается, когда мы ОТПУСКАЕМ мышь над окном
 void MainWindow::dropEvent(QDropEvent *event)
 {
-    // Проходим по всем ссылкам, которые нам "бросили" (можно бросить несколько файлов сразу)
     for (const QUrl &url : event->mimeData()->urls()) {
         const QString filePath = url.toLocalFile();
-        // Проверяем, что это действительно локальный файл, а не ссылка на сайт
         if (!filePath.isEmpty()) {
-            addSoundFile(filePath); // Вызываем нашу новую функцию для добавления
+            addSoundFile(filePath);
         }
     }
 }
@@ -113,21 +168,16 @@ void MainWindow::addSoundFile(const QString& filePath)
     QFileInfo fileInfo(filePath);
     QTableWidgetItem *tagItem = new QTableWidgetItem(fileInfo.fileName());
     
-    // --- НОВЫЙ КОД ДЛЯ DURATION ---
-    // 1. Создаем ячейку для длительности и пока ставим в нее "Loading..."
     QTableWidgetItem *durationItem = new QTableWidgetItem(tr("Loading..."));
     
-    // 2. Сохраняем номер строки прямо в ячейке. Это хитрый трюк,
-    //    чтобы потом в слоте onDurationChanged знать, какую ячейку обновлять.
     durationItem->setData(Qt::UserRole, newRow);
     
     QTableWidgetItem *hotkeyItem = new QTableWidgetItem("None");
 
     m_soundTableWidget->setItem(newRow, 1, tagItem);
-    m_soundTableWidget->setItem(newRow, 2, durationItem); // Ставим ячейку с "Loading..."
+    m_soundTableWidget->setItem(newRow, 2, durationItem);
     m_soundTableWidget->setItem(newRow, 3, hotkeyItem);
 
-    // 3. Запускаем чтение метаданных
     m_metaDataReader->setSource(QUrl::fromLocalFile(filePath));
 
     updateIndexes();
@@ -136,28 +186,19 @@ void MainWindow::addSoundFile(const QString& filePath)
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
-    // 1. Проверяем, была ли нажата именно клавиша Delete.
     if (event->key() == Qt::Key_Delete) {
         
-        // 2. Проверяем, что фокус находится именно на нашей таблице.
-        //    Это нужно, чтобы случайно не удалить звук, когда фокус
-        //    находится на каком-то другом элементе (в будущем).
         if (m_soundTableWidget->hasFocus()) {
             
-            // 3. Получаем текущую выделенную строку.
             const int currentRow = m_soundTableWidget->currentRow();
             
             if (currentRow >= 0) {
-                // 4. Если строка выделена, удаляем ее и обновляем индексы.
                 m_soundTableWidget->removeRow(currentRow);
                 updateIndexes();
                 qDebug() << "Removed sound at row" << currentRow << "with Delete key.";
             }
         }
     } else {
-        // 5. Если была нажата любая другая клавиша, мы передаем
-        //    событие родительскому классу для стандартной обработки
-        //    (например, для навигации по таблице стрелками).
         QMainWindow::keyPressEvent(event);
     }
 }
@@ -165,6 +206,11 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 void MainWindow::updateIndexes()
 {
     // ...
+}
+
+void MainWindow::onExitTriggered()
+{
+    qApp->quit();
 }
 
 void MainWindow::onPlayClicked()
@@ -180,6 +226,39 @@ void MainWindow::onPauseClicked()
 void MainWindow::onStopClicked()
 {
     qDebug() << "Stop action triggered!";
+}
+
+void MainWindow::onProgressSliderMoved(int position)
+{
+    qDebug() << "Progress slider moved to position:" << position;
+}
+
+void MainWindow::onHeadphonesVolumeChanged(int value)
+{
+    qDebug() << "Headphones volume changed to:" << value;
+}
+
+void MainWindow::onMicVolumeChanged(int value)
+{
+    qDebug() << "Mic volume changed to:" << value;
+}
+
+void MainWindow::onHeadphonesToggle(bool checked)
+{
+    qDebug() << "Headphones output" << (checked ? "ENABLED" : "DISABLED");
+    // Здесь будет логика включения/выключения вывода в наушники
+}
+
+void MainWindow::onAllToggle(bool checked)
+{
+    qDebug() << "All (mic) output" << (checked ? "ENABLED" : "DISABLED");
+    // Здесь будет логика включения/выключения вывода в микрофон
+}
+
+void MainWindow::onRepeatToggle(bool checked)
+{
+    qDebug() << "Repeat" << (checked ? "ON" : "OFF");
+    // Здесь будет логика повтора воспроизведения
 }
 
 void MainWindow::onDurationChanged(qint64 duration)

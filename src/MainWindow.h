@@ -2,18 +2,22 @@
 
 #pragma once
 
-// Меняем на QMainWindow
 #include <QMainWindow>
 #include <QKeyEvent>
 
-// Вперед объявляем классы
 class QTableWidget;
 class QToolBar;
 class QAction;
 class QDragEnterEvent;
 class QDropEvent;
+class QKeyEvent;
 class QMediaPlayer;
 class QSlider;
+class QMenu;
+class QMenuBar;
+class QStatusBar;
+class QToolButton;
+class QLabel;
 
 class MainWindow : public QMainWindow
 {
@@ -23,7 +27,6 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-// Убираем слоты для старых кнопок
 private slots:
     void onPlayClicked();
     void onPauseClicked();
@@ -32,8 +35,12 @@ private slots:
     void onProgressSliderMoved(int position);
     void onHeadphonesVolumeChanged(int value);
     void onMicVolumeChanged(int value);
+    void onExitTriggered();    
+    void onHeadphonesToggle(bool checked);
+    void onAllToggle(bool checked);
+    void onRepeatToggle(bool checked);
 
-// Добавляем защищенную секцию для переопределения обработчиков событий
+
 protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
@@ -41,12 +48,21 @@ protected:
 
 private:
     void updateIndexes();
-    void addSoundFile(const QString& filePath); // Новая вспомогательная функция
+    void addSoundFile(const QString& filePath);
 
-    // Центральная часть
+    // System Menu
+    QMenuBar *m_menuBar;
+    QMenu *m_fileMenu;
+    QMenu *m_editMenu;
+    QMenu *m_playMenu;
+    QMenu *m_windowMenu;
+    QMenu *m_helpMenu;
+    QAction *m_exitAction;
+    //
+
     QTableWidget *m_soundTableWidget;
 
-    // Верхняя панель
+    // Sound Panel
     QToolBar *m_playbackToolBar;
     QAction *m_playAction;
     QAction *m_pauseAction;
@@ -54,7 +70,15 @@ private:
     QSlider *m_progressSlider;
     QSlider *m_headphonesVolumeSlider;
     QSlider *m_micVolumeSlider;
+    //
 
+    // Bottom status bar
+    QStatusBar *m_statusBar;
+    QToolButton *m_headphonesButton;
+    QToolButton *m_allButton;
+    QToolButton *m_repeatButton;
+    QLabel *m_statusLabel;
+    // 
 
     QMediaPlayer *m_metaDataReader;
 };
