@@ -29,6 +29,8 @@ MainWindow::MainWindow(QWidget *parent)
     m_metaDataReader = new QMediaPlayer(this);
     connect(m_metaDataReader, &QMediaPlayer::durationChanged, this, &MainWindow::onDurationChanged);
 
+    m_player = new QMediaPlayer(this);
+
     // Exit action
     m_exitAction = new QAction(tr("&Exit"), this);
     m_exitAction->setShortcut(QKeySequence::Quit);
@@ -104,6 +106,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_allButton, &QToolButton::toggled, this, &MainWindow::onAllToggle);
     connect(m_repeatButton, &QToolButton::toggled, this, &MainWindow::onRepeatToggle);
 
+    connect(m_player, &QMediaPlayer::positionChanged, this, &MainWindow::onPlayerPositionChanged);
+    connect(m_player, &QMediaPlayer::durationChanged, this, &MainWindow::onPlayerDurationChanged);
+    connect(m_player, &QMediaPlayer::playbackStateChanged, this, &MainWindow::onPlayerStateChanged);
+
     setWindowTitle("OpenSoundDeck v0.1 (dev)");
     resize(800, 600);
     setMinimumSize(500, 400);
@@ -162,16 +168,11 @@ void MainWindow::addSoundFile(const QString& filePath)
     const int newRow = m_soundTableWidget->rowCount();
     m_soundTableWidget->insertRow(newRow);
 
-    QTableWidgetItem *indexItem = new QTableWidgetItem();
-    m_soundTableWidget->setItem(newRow, 0, indexItem);
-
     QFileInfo fileInfo(filePath);
     QTableWidgetItem *tagItem = new QTableWidgetItem(fileInfo.fileName());
+    tagItem->setData(Qt::UserRole, filePath);
     
     QTableWidgetItem *durationItem = new QTableWidgetItem(tr("Loading..."));
-    
-    durationItem->setData(Qt::UserRole, newRow);
-    
     QTableWidgetItem *hotkeyItem = new QTableWidgetItem("None");
 
     m_soundTableWidget->setItem(newRow, 1, tagItem);
@@ -181,7 +182,7 @@ void MainWindow::addSoundFile(const QString& filePath)
     m_metaDataReader->setSource(QUrl::fromLocalFile(filePath));
 
     updateIndexes();
-    qDebug() << "Started reading metadata for:" << filePath;
+    qDebug() << "Added sound:" << filePath;
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -205,7 +206,20 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::updateIndexes()
 {
-    // ...
+    // Проходим по всем строкам таблицы
+    for (int i = 0; i < m_soundTableWidget->rowCount(); ++i) {
+        // Пытаемся получить ячейку в первой колонке (Index)
+        QTableWidgetItem *item = m_soundTableWidget->item(i, 0);
+        
+        // ЕСЛИ ЯЧЕЙКИ НЕТ (item == nullptr), ТО СОЗДАЕМ ЕЕ
+        if (!item) {
+            item = new QTableWidgetItem();
+            m_soundTableWidget->setItem(i, 0, item);
+        }
+        
+        // Устанавливаем правильный номер (i + 1)
+        item->setText(QString::number(i + 1));
+    }
 }
 
 void MainWindow::onExitTriggered()
@@ -215,22 +229,47 @@ void MainWindow::onExitTriggered()
 
 void MainWindow::onPlayClicked()
 {
-    qDebug() << "Play action triggered!";
+    // 1. Получаем текущую выделенную строку
+    const int currentRow = m_soundTableWidget->currentRow();
+    if (currentRow < 0) {
+        qDebug() << "No sound selected to play.";
+        return;
+    }
+
+    // 2. Получаем ячейку с тегом (во второй колонке, индекс 1)
+    QTableWidgetItem *tagItem = m_soundTableWidget->item(currentRow, 1);
+    if (!tagItem) {
+        qDebug() << "Invalid item at selected row.";
+        return;
+    }
+
+    // 3. Извлекаем ПОЛНЫЙ ПУТЬ к файлу, который мы сохранили в UserRole
+    const QString filePath = tagItem->data(Qt::UserRole).toString();
+
+    // 4. Устанавливаем этот файл как источник для плеера и запускаем воспроизведение
+    m_player->setSource(QUrl::fromLocalFile(filePath));
+    m_player->play();
+
+    qDebug() << "Playing:" << filePath;
 }
 
 void MainWindow::onPauseClicked()
 {
-    qDebug() << "Pause action triggered!";
+    m_player->pause();
+    qDebug() << "Playback paused.";
 }
 
 void MainWindow::onStopClicked()
 {
-    qDebug() << "Stop action triggered!";
+    m_player->stop();
+    m_progressSlider->setValue(0);
+    qDebug() << "Playback stopped.";
 }
 
 void MainWindow::onProgressSliderMoved(int position)
 {
-    qDebug() << "Progress slider moved to position:" << position;
+    m_player->setPosition(position);
+    qDebug() << "Seek to position:" << position;
 }
 
 void MainWindow::onHeadphonesVolumeChanged(int value)
@@ -284,5 +323,37 @@ void MainWindow::onDurationChanged(qint64 duration)
                break;
             }
         }
+    }
+}
+
+void MainWindow::onPlayerPositionChanged(qint64 position)
+{
+    // Мы устанавливаем значение слайдера, но блокируем сигналы,
+    // чтобы это не вызвало наш собственный слот onProgressSliderMoved.
+    // Это предотвращает "эхо" и лишние вызовы.
+    m_progressSlider->blockSignals(true);
+    m_progressSlider->setValue(position);
+    m_progressSlider->blockSignals(false);
+}
+
+// Слот, настраивающий максимальное значение слайдера, когда трек загружен
+void MainWindow::onPlayerDurationChanged(qint64 duration)
+{
+    m_progressSlider->setMaximum(duration);
+}
+
+// Слот, который реагирует на смену состояния плеера
+void MainWindow::onPlayerStateChanged(QMediaPlayer::PlaybackState state)
+{
+    // В зависимости от состояния, мы делаем активными или неактивными
+    // кнопки на панели инструментов для удобства пользователя.
+    if (state == QMediaPlayer::PlayingState) {
+        m_playAction->setEnabled(false);
+        m_pauseAction->setEnabled(true);
+        m_stopAction->setEnabled(true);
+    } else {
+        m_playAction->setEnabled(true);
+        m_pauseAction->setEnabled(false);
+        m_stopAction->setEnabled(false);
     }
 }

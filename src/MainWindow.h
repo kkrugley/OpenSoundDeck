@@ -39,6 +39,9 @@ private slots:
     void onHeadphonesToggle(bool checked);
     void onAllToggle(bool checked);
     void onRepeatToggle(bool checked);
+    void onPlayerPositionChanged(qint64 position);
+    void onPlayerDurationChanged(qint64 duration);
+    void onPlayerStateChanged(QMediaPlayer::PlaybackState state);
 
 
 protected:
@@ -81,4 +84,5 @@ private:
     // 
 
     QMediaPlayer *m_metaDataReader;
+    QMediaPlayer *m_player;
 };
