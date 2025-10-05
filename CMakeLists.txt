@@ -14,7 +14,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 # Находим библиотеку Qt6 и ее компоненты
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Multimedia)
 
 # Добавляем наш исполняемый файл "OpenSoundDeck"
 # Он будет собран из исходников, перечисленных ниже
@@ -29,4 +29,5 @@ target_link_libraries(OpenSoundDeck PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
+    Qt6::Multimedia
 )
