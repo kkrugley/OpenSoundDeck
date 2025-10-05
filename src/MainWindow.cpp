@@ -1,4 +1,22 @@
-// src/MainWindow.cpp
+/*src/MainWindow.cpp*/
+
+/*
+ * OpenSoundDeck
+ * Copyright (C) 2025 Pavel Kruhlei
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
 #include "MainWindow.h"
 
@@ -6,6 +24,7 @@
 #include <QVBoxLayout>
 #include <QDebug>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QStandardPaths>
 #include <QHeaderView>
 #include <QToolBar>
@@ -14,75 +33,91 @@
 #include <QDropEvent>
 #include <QMimeData>
 #include <QUrl>
-#include <QMediaPlayer>
 #include <QSlider>
 #include <QMenuBar>
 #include <QMenu>
 #include <QStatusBar>
 #include <QToolButton>
 #include <QLabel>
+#include <QMessageBox>
+#include <QMediaPlayer>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-
+    // --- 1. ИНИЦИАЛИЗАЦИЯ СЛУЖЕБНЫХ ОБЪЕКТОВ ---
+    m_audioEngine = new AudioEngine(this);
+    if (!m_audioEngine->init()) {
+        QMessageBox::critical(this, tr("Fatal Error"), tr("Failed to initialize audio engine. The application will now close."));
+        // В реальном приложении можно было бы запланировать закрытие, но для простоты пока оставим так
+    }
     m_metaDataReader = new QMediaPlayer(this);
-    connect(m_metaDataReader, &QMediaPlayer::durationChanged, this, &MainWindow::onDurationChanged);
 
-    m_player = new QMediaPlayer(this);
-
-    // Exit action
+    // --- 2. СОЗДАНИЕ ДЕЙСТВИЙ (ACTIONS) ---
+    // Меню
     m_exitAction = new QAction(tr("&Exit"), this);
     m_exitAction->setShortcut(QKeySequence::Quit);
 
-    // Dropdown menu
+    // Панель инструментов
+    m_playAction = new QAction(style()->standardIcon(QStyle::SP_MediaPlay), tr("Play"), this);
+    m_pauseAction = new QAction(style()->standardIcon(QStyle::SP_MediaPause), tr("Pause"), this);
+    m_stopAction = new QAction(style()->standardIcon(QStyle::SP_MediaStop), tr("Stop"), this);
+
+    // Устанавливаем начальное состояние кнопок
+    m_playAction->setEnabled(true);
+    m_pauseAction->setEnabled(false);
+    m_stopAction->setEnabled(false);
+
+    // --- 3. СОЗДАНИЕ ВИДЖЕТОВ ИНТЕРФЕЙСА ---
+    // Верхнее меню
     m_fileMenu = menuBar()->addMenu(tr("&File"));
     m_editMenu = menuBar()->addMenu(tr("&Edit"));
     m_playMenu = menuBar()->addMenu(tr("&Play"));
     m_windowMenu = menuBar()->addMenu(tr("&Window"));
     m_helpMenu = menuBar()->addMenu(tr("&Help"));
-    
-    // 3. Dropdown File category
-    m_fileMenu->addAction(m_exitAction);
 
-    m_playAction = new QAction(style()->standardIcon(QStyle::SP_MediaPlay), tr("Play"), this);
-    m_pauseAction = new QAction(style()->standardIcon(QStyle::SP_MediaPause), tr("Pause"), this);
-    m_stopAction = new QAction(style()->standardIcon(QStyle::SP_MediaStop), tr("Stop"), this);
-
+    // Панель инструментов
     m_playbackToolBar = new QToolBar(tr("Playback"), this);
-    m_playbackToolBar->addAction(m_playAction);
-    m_playbackToolBar->addAction(m_pauseAction);
-    m_playbackToolBar->addAction(m_stopAction);
-
     m_progressSlider = new QSlider(Qt::Horizontal, this);
-    m_playbackToolBar->addWidget(m_progressSlider);
-
-    QWidget* spacer = new QWidget();
-    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    m_playbackToolBar->addWidget(spacer);
-
     m_headphonesVolumeSlider = new QSlider(Qt::Vertical, this);
     m_micVolumeSlider = new QSlider(Qt::Vertical, this);
 
+    // Центральная область
+    m_soundTableWidget = new QTableWidget();
+
+    // Строка состояния
+    m_headphonesButton = new QToolButton(this);
+    m_allButton = new QToolButton(this);
+    m_repeatButton = new QToolButton(this);
+    m_statusLabel = new QLabel(tr("Ready"), this);
+
+    // --- 4. НАСТРОЙКА ВИДЖЕТОВ И КОМПОНОВКА ---
+    // Меню
+    m_fileMenu->addAction(m_exitAction);
+    
+    // Панель инструментов
+    m_playbackToolBar->addAction(m_playAction);
+    m_playbackToolBar->addAction(m_pauseAction);
+    m_playbackToolBar->addAction(m_stopAction);
+    m_playbackToolBar->addWidget(m_progressSlider);
+    QWidget* spacer = new QWidget();
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    m_playbackToolBar->addWidget(spacer);
     m_headphonesVolumeSlider->setMaximumHeight(40);
     m_micVolumeSlider->setMaximumHeight(40);
     m_playbackToolBar->addWidget(m_headphonesVolumeSlider);
     m_playbackToolBar->addWidget(m_micVolumeSlider);
-    
     addToolBar(m_playbackToolBar);
-    
+
+    // Центральный виджет
     QWidget *centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
-
     QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
-    
-    m_soundTableWidget = new QTableWidget();
- 
     mainLayout->addWidget(m_soundTableWidget);
     
+    // Настройка таблицы
     setAcceptDrops(true); 
     m_soundTableWidget->setAcceptDrops(true);
-    
     m_soundTableWidget->setColumnCount(4);
     m_soundTableWidget->setHorizontalHeaderLabels({tr("Index"), tr("Tag"), tr("Duration"), tr("Hotkey")});
     m_soundTableWidget->verticalHeader()->setVisible(false);
@@ -94,53 +129,51 @@ MainWindow::MainWindow(QWidget *parent)
     m_soundTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_soundTableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
 
-    connect(m_playAction, &QAction::triggered, this, &MainWindow::onPlayClicked);
-    connect(m_pauseAction, &QAction::triggered, this, &MainWindow::onPauseClicked);
-    connect(m_stopAction, &QAction::triggered, this, &MainWindow::onStopClicked);
-    
-    connect(m_progressSlider, &QSlider::sliderMoved, this, &MainWindow::onProgressSliderMoved);
-    connect(m_headphonesVolumeSlider, &QSlider::valueChanged, this, &MainWindow::onHeadphonesVolumeChanged);
-    connect(m_micVolumeSlider, &QSlider::valueChanged, this, &MainWindow::onMicVolumeChanged);
-    connect(m_exitAction, &QAction::triggered, this, &MainWindow::onExitTriggered);
-    connect(m_headphonesButton, &QToolButton::toggled, this, &MainWindow::onHeadphonesToggle);
-    connect(m_allButton, &QToolButton::toggled, this, &MainWindow::onAllToggle);
-    connect(m_repeatButton, &QToolButton::toggled, this, &MainWindow::onRepeatToggle);
-
-    connect(m_player, &QMediaPlayer::positionChanged, this, &MainWindow::onPlayerPositionChanged);
-    connect(m_player, &QMediaPlayer::durationChanged, this, &MainWindow::onPlayerDurationChanged);
-    connect(m_player, &QMediaPlayer::playbackStateChanged, this, &MainWindow::onPlayerStateChanged);
-
-    setWindowTitle("OpenSoundDeck v0.1 (dev)");
-    resize(800, 600);
-    setMinimumSize(500, 400);
-
-    m_headphonesButton = new QToolButton(this);
+    // Строка состояния
     m_headphonesButton->setText("H");
-    m_headphonesButton->setCheckable(true); // Делаем кнопку "залипающей"
-    m_headphonesButton->setChecked(true);   // Включаем по умолчанию
+    m_headphonesButton->setCheckable(true);
+    m_headphonesButton->setChecked(true);
     m_headphonesButton->setToolTip(tr("Output to headphones"));
-
-    m_allButton = new QToolButton(this);
     m_allButton->setText("A");
     m_allButton->setCheckable(true);
     m_allButton->setChecked(true);
     m_allButton->setToolTip(tr("Output to all (mic)"));
-
-    m_repeatButton = new QToolButton(this);
-    m_repeatButton->setText(QString::fromUtf8("↻")); // Используем символ Unicode
+    m_repeatButton->setText(QString::fromUtf8("↻"));
     m_repeatButton->setCheckable(true);
     m_repeatButton->setToolTip(tr("Repeat playback"));
-
-    m_statusLabel = new QLabel(tr("Ready"), this);
-    
-    // 2. Добавляем виджеты в строку состояния
-    // statusBar() сам создает QStatusBar, если его еще нет
     statusBar()->addWidget(m_headphonesButton);
     statusBar()->addWidget(m_allButton);
     statusBar()->addWidget(m_statusLabel);
-
-    // addPermanentWidget добавляет виджет справа
     statusBar()->addPermanentWidget(m_repeatButton);
+
+    // --- 5. СОЕДИНЕНИЕ СИГНАЛОВ И СЛОТОВ ---
+    // Служебные
+    connect(m_metaDataReader, &QMediaPlayer::durationChanged, this, &MainWindow::onDurationChanged);
+
+    // Меню
+    connect(m_exitAction, &QAction::triggered, this, &MainWindow::onExitTriggered);
+
+    // Audio
+    connect(m_audioEngine, &AudioEngine::durationReady, m_progressSlider, &QSlider::setMaximum);
+    connect(m_audioEngine, &AudioEngine::playbackFinished, this, &MainWindow::onPlaybackFinished);
+
+    // Панель инструментов
+    connect(m_playAction, &QAction::triggered, this, &MainWindow::onPlayClicked);
+    connect(m_pauseAction, &QAction::triggered, this, &MainWindow::onPauseClicked);
+    connect(m_stopAction, &QAction::triggered, this, &MainWindow::onStopClicked);
+    connect(m_progressSlider, &QSlider::sliderMoved, this, &MainWindow::onProgressSliderMoved);
+    connect(m_headphonesVolumeSlider, &QSlider::valueChanged, this, &MainWindow::onHeadphonesVolumeChanged);
+    connect(m_micVolumeSlider, &QSlider::valueChanged, this, &MainWindow::onMicVolumeChanged);
+
+    // Строка состояния
+    connect(m_headphonesButton, &QToolButton::toggled, this, &MainWindow::onHeadphonesToggle);
+    connect(m_allButton, &QToolButton::toggled, this, &MainWindow::onAllToggle);
+    connect(m_repeatButton, &QToolButton::toggled, this, &MainWindow::onRepeatToggle);
+
+    // --- 6. НАСТРОЙКИ ОКНА ---
+    setWindowTitle("OpenSoundDeck v0.1 (dev)");
+    resize(800, 600);
+    setMinimumSize(500, 400);
 }
 
 MainWindow::~MainWindow() {}
@@ -229,131 +262,84 @@ void MainWindow::onExitTriggered()
 
 void MainWindow::onPlayClicked()
 {
-    // 1. Получаем текущую выделенную строку
     const int currentRow = m_soundTableWidget->currentRow();
-    if (currentRow < 0) {
+    if (currentRow < 0 || m_soundTableWidget->rowCount() == 0) {
         qDebug() << "No sound selected to play.";
         return;
     }
 
-    // 2. Получаем ячейку с тегом (во второй колонке, индекс 1)
     QTableWidgetItem *tagItem = m_soundTableWidget->item(currentRow, 1);
     if (!tagItem) {
         qDebug() << "Invalid item at selected row.";
         return;
     }
 
-    // 3. Извлекаем ПОЛНЫЙ ПУТЬ к файлу, который мы сохранили в UserRole
     const QString filePath = tagItem->data(Qt::UserRole).toString();
+    m_audioEngine->playSound(filePath);
+    m_playAction->setEnabled(false);
+    m_pauseAction->setEnabled(true);
+    m_stopAction->setEnabled(true);
+}
 
-    // 4. Устанавливаем этот файл как источник для плеера и запускаем воспроизведение
-    m_player->setSource(QUrl::fromLocalFile(filePath));
-    m_player->play();
-
-    qDebug() << "Playing:" << filePath;
+void MainWindow::onPlaybackFinished()
+{
+    m_playAction->setEnabled(true);
+    m_pauseAction->setEnabled(false);
+    m_stopAction->setEnabled(false);
+    m_progressSlider->setValue(0);
 }
 
 void MainWindow::onPauseClicked()
 {
-    m_player->pause();
-    qDebug() << "Playback paused.";
+    // TODO: Реализовать паузу в AudioEngine
+    qDebug() << "Pause is not implemented yet.";
 }
 
 void MainWindow::onStopClicked()
 {
-    m_player->stop();
-    m_progressSlider->setValue(0);
-    qDebug() << "Playback stopped.";
+    m_audioEngine->stopAllSounds(); // <-- ИСПОЛЬЗУЕМ НАШ ДВИЖОК
+    onPlaybackFinished(); // Обновляем UI немедленно
+    qDebug() << "Stop command sent to audio engine.";
 }
 
 void MainWindow::onProgressSliderMoved(int position)
 {
-    m_player->setPosition(position);
-    qDebug() << "Seek to position:" << position;
+    // TODO: Реализовать перемотку в AudioEngine
+    // m_audioEngine->seek(position);
+    qDebug() << "Seek is not implemented yet.";
 }
 
 void MainWindow::onHeadphonesVolumeChanged(int value)
 {
-    qDebug() << "Headphones volume changed to:" << value;
+    // Конвертируем значение слайдера (0-99) в громкость (0.0-1.0)
+    float volume = static_cast<float>(value) / 99.0f;
+    m_audioEngine->setMonitoringVolume(volume);
 }
 
 void MainWindow::onMicVolumeChanged(int value)
 {
+    // TODO: Реализовать громкость для микса в AudioEngine
     qDebug() << "Mic volume changed to:" << value;
 }
 
-void MainWindow::onHeadphonesToggle(bool checked)
-{
-    qDebug() << "Headphones output" << (checked ? "ENABLED" : "DISABLED");
-    // Здесь будет логика включения/выключения вывода в наушники
-}
-
-void MainWindow::onAllToggle(bool checked)
-{
-    qDebug() << "All (mic) output" << (checked ? "ENABLED" : "DISABLED");
-    // Здесь будет логика включения/выключения вывода в микрофон
-}
-
-void MainWindow::onRepeatToggle(bool checked)
-{
-    qDebug() << "Repeat" << (checked ? "ON" : "OFF");
-    // Здесь будет логика повтора воспроизведения
-}
+void MainWindow::onHeadphonesToggle(bool checked) { qDebug() << "Headphones output" << (checked ? "ENABLED" : "DISABLED"); }
+void MainWindow::onAllToggle(bool checked) { qDebug() << "All (mic) output" << (checked ? "ENABLED" : "DISABLED"); }
+void MainWindow::onRepeatToggle(bool checked) { qDebug() << "Repeat" << (checked ? "ON" : "OFF"); }
 
 void MainWindow::onDurationChanged(qint64 duration)
 {
-    // Длительность приходит в миллисекундах.
     if (duration > 0) {
-
         for (int i = m_soundTableWidget->rowCount() - 1; i >= 0; --i) {
             QTableWidgetItem* item = m_soundTableWidget->item(i, 2); 
             if (item && item->text() == tr("Loading...")) {
                 int seconds = duration / 1000;
                 int minutes = seconds / 60;
                 seconds %= 60;
-                
-                // Форматируем в строку "М:СС"
-                const QString formattedDuration = QString("%1:%2")
-                    .arg(minutes)
-                    .arg(seconds, 2, 10, QChar('0'));
-
+                const QString formattedDuration = QString("%1:%2").arg(minutes).arg(seconds, 2, 10, QChar('0'));
                 item->setText(formattedDuration);
                 qDebug() << "Duration found:" << formattedDuration;
-                
-               break;
+                break;
             }
         }
-    }
-}
-
-void MainWindow::onPlayerPositionChanged(qint64 position)
-{
-    // Мы устанавливаем значение слайдера, но блокируем сигналы,
-    // чтобы это не вызвало наш собственный слот onProgressSliderMoved.
-    // Это предотвращает "эхо" и лишние вызовы.
-    m_progressSlider->blockSignals(true);
-    m_progressSlider->setValue(position);
-    m_progressSlider->blockSignals(false);
-}
-
-// Слот, настраивающий максимальное значение слайдера, когда трек загружен
-void MainWindow::onPlayerDurationChanged(qint64 duration)
-{
-    m_progressSlider->setMaximum(duration);
-}
-
-// Слот, который реагирует на смену состояния плеера
-void MainWindow::onPlayerStateChanged(QMediaPlayer::PlaybackState state)
-{
-    // В зависимости от состояния, мы делаем активными или неактивными
-    // кнопки на панели инструментов для удобства пользователя.
-    if (state == QMediaPlayer::PlayingState) {
-        m_playAction->setEnabled(false);
-        m_pauseAction->setEnabled(true);
-        m_stopAction->setEnabled(true);
-    } else {
-        m_playAction->setEnabled(true);
-        m_pauseAction->setEnabled(false);
-        m_stopAction->setEnabled(false);
     }
 }

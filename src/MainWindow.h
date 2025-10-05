@@ -1,9 +1,28 @@
-// src/MainWindow.h
+/*src/MainWindow.h*/
+
+/*
+ * OpenSoundDeck
+ * Copyright (C) 2025 Pavel Kruhlei
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
 #pragma once
 
 #include <QMainWindow>
 #include <QKeyEvent>
+#include "AudioEngine.h"
 
 class QTableWidget;
 class QToolBar;
@@ -11,13 +30,13 @@ class QAction;
 class QDragEnterEvent;
 class QDropEvent;
 class QKeyEvent;
-class QMediaPlayer;
 class QSlider;
 class QMenu;
 class QMenuBar;
 class QStatusBar;
 class QToolButton;
 class QLabel;
+class QMediaPlayer;
 
 class MainWindow : public QMainWindow
 {
@@ -31,17 +50,16 @@ private slots:
     void onPlayClicked();
     void onPauseClicked();
     void onStopClicked();
-    void onDurationChanged(qint64 duration);
+    void onExitTriggered();    
+
     void onProgressSliderMoved(int position);
     void onHeadphonesVolumeChanged(int value);
     void onMicVolumeChanged(int value);
-    void onExitTriggered();    
     void onHeadphonesToggle(bool checked);
     void onAllToggle(bool checked);
     void onRepeatToggle(bool checked);
-    void onPlayerPositionChanged(qint64 position);
-    void onPlayerDurationChanged(qint64 duration);
-    void onPlayerStateChanged(QMediaPlayer::PlaybackState state);
+    void onDurationChanged(qint64 duration);
+    void onPlaybackFinished();
 
 
 protected:
@@ -84,5 +102,5 @@ private:
     // 
 
     QMediaPlayer *m_metaDataReader;
-    QMediaPlayer *m_player;
+    AudioEngine *m_audioEngine;
 };

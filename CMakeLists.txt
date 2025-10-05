@@ -16,11 +16,24 @@ set(CMAKE_AUTOUIC ON)
 # Находим библиотеку Qt6 и ее компоненты
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Multimedia)
 
+include_directories(third_party/miniaudio)
+
+if (UNIX AND NOT APPLE)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(ALSA REQUIRED alsa)
+    pkg_check_modules(LIBPULSE REQUIRED libpulse)
+    
+    # Добавляем пути к заголовочным файлам системных библиотек
+    include_directories(${ALSA_INCLUDE_DIRS})
+    include_directories(${LIBPULSE_INCLUDE_DIRS})
+endif()
+
 # Добавляем наш исполняемый файл "OpenSoundDeck"
 # Он будет собран из исходников, перечисленных ниже
 add_executable(OpenSoundDeck
     src/main.cpp
     src/MainWindow.cpp
+    src/AudioEngine.cpp
 )
 
 # Присоединяем (линкуем) библиотеки Qt к нашему проекту
@@ -31,3 +44,11 @@ target_link_libraries(OpenSoundDeck PRIVATE
     Qt6::Widgets
     Qt6::Multimedia
 )
+
+if (UNIX AND NOT APPLE)
+    target_link_libraries(OpenSoundDeck PRIVATE
+        ${ALSA_LIBRARIES}
+        ${LIBPULSE_LIBRARIES}
+        pthread
+    )
+endif()

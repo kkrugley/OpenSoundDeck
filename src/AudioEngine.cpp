@@ -1,0 +1,176 @@
+// src/AudioEngine.cpp
+
+/*
+ * OpenSoundDeck
+ * Copyright (C) 2025 Pavel Kruhlei
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#include "AudioEngine.h"
+#include <QDebug>
+#include <QMetaObject> // Для безопасного вызова методов между потоками
+
+#define MA_DEBUG_OUTPUT
+#define MA_IMPLEMENTATION
+#include "miniaudio.h"
+
+void AudioEngine::dataCallback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
+{
+    AudioEngine* engine = static_cast<AudioEngine*>(pDevice->pUserData);
+    if (engine == nullptr) {
+        return;
+    }
+
+    // Загружаем указатель на декодер атомарно.
+    ma_decoder* pDecoder = engine->m_pDecoder.load();
+
+    if (pDecoder == nullptr) {
+        // Если декодера нет, просто заполняем буфер тишиной.
+        ma_silence_pcm_frames(pOutput, frameCount, pDevice->playback.format, pDevice->playback.channels);
+        return;
+    }
+
+    ma_uint64 framesRead = 0;
+    ma_decoder_read_pcm_frames(pDecoder, pOutput, frameCount, &framesRead);
+
+    if (framesRead < frameCount) {
+        // Файл закончился. Безопасно просим главный поток вызвать postPlaybackFinished()
+        QMetaObject::invokeMethod(engine, "postPlaybackFinished", Qt::QueuedConnection);
+    }
+}
+
+AudioEngine::AudioEngine(QObject *parent)
+    : QObject(parent),
+      m_context(new ma_context),
+      m_playbackDevice(new ma_device),
+      m_pDecoder(nullptr), // Инициализируем атомарный указатель как nullptr
+      m_monitoringVolume(1.0f),
+      m_isDeviceInitialized(false)
+{
+}
+
+AudioEngine::~AudioEngine()
+{
+    stopAllSounds(); 
+
+    if (m_isDeviceInitialized) {
+        ma_device_uninit(m_playbackDevice);
+    }
+
+    delete m_context;
+    delete m_playbackDevice;
+    // Указатель m_pDecoder управляется атомарно и удаляется в stopAllSounds
+}
+
+bool AudioEngine::init()
+{
+    if (ma_context_init(NULL, 0, NULL, m_context) != MA_SUCCESS) {
+        qCritical() << "Failed to initialize miniaudio context.";
+        return false;
+    }
+    qDebug() << "Miniaudio context initialized.";
+    return true;
+}
+
+void AudioEngine::playSound(const QString &filePath)
+{
+    // Сначала останавливаем любой играющий звук
+    stopAllSounds();
+
+    // Создаем новый декодер
+    ma_decoder* pNewDecoder = new ma_decoder;
+    if (ma_decoder_init_file(filePath.toStdString().c_str(), NULL, pNewDecoder) != MA_SUCCESS) {
+        qWarning() << "Failed to open or decode file:" << filePath;
+        delete pNewDecoder;
+        return;
+    }
+
+    // Если устройство не запущено, запускаем его
+    if (m_isDeviceInitialized && !ma_device_is_started(m_playbackDevice)) {
+        if (ma_device_start(m_playbackDevice) != MA_SUCCESS) {
+            qWarning() << "Failed to re-start playback device.";
+            return;
+        }
+    }
+
+    // Инициализируем и запускаем устройство, если оно еще не работает
+    if (!m_isDeviceInitialized) {
+        ma_device_config config = ma_device_config_init(ma_device_type_playback);
+        config.playback.format   = pNewDecoder->outputFormat;
+        config.playback.channels = pNewDecoder->outputChannels;
+        config.sampleRate        = pNewDecoder->outputSampleRate;
+        config.dataCallback      = dataCallback;
+        config.pUserData         = this;
+
+        if (ma_device_init(m_context, &config, m_playbackDevice) != MA_SUCCESS) {
+            qWarning() << "Failed to initialize playback device.";
+            ma_decoder_uninit(pNewDecoder);
+            delete pNewDecoder;
+            return;
+        }
+
+        if (ma_device_start(m_playbackDevice) != MA_SUCCESS) {
+            qWarning() << "Failed to start playback device.";
+            ma_device_uninit(m_playbackDevice);
+            ma_decoder_uninit(pNewDecoder);
+            delete pNewDecoder;
+            return;
+        }
+        m_isDeviceInitialized = true;
+    }
+
+    // Получаем длительность и отправляем сигнал в UI
+    ma_uint64 durationFrames;
+    ma_decoder_get_length_in_pcm_frames(pNewDecoder, &durationFrames);
+    ma_uint64 durationMillis = (durationFrames * 1000) / pNewDecoder->outputSampleRate;
+    emit durationReady(durationMillis);
+
+    // Атомарно подменяем указатель на новый декодер
+    m_pDecoder.store(pNewDecoder);
+
+    qDebug() << "Playback started for:" << filePath;
+}
+
+void AudioEngine::stopAllSounds()
+{
+    // Атомарно забираем указатель на текущий декодер и заменяем его на nullptr
+    ma_decoder* pOldDecoder = m_pDecoder.exchange(nullptr);
+
+    // Если был старый декодер, безопасно его удаляем
+    if (pOldDecoder != nullptr) {
+        ma_decoder_uninit(pOldDecoder);
+        delete pOldDecoder;
+        qDebug() << "Previous sound stopped and decoder uninitialized.";
+    }
+
+    if (m_isDeviceInitialized && ma_device_is_started(m_playbackDevice)) {
+        ma_device_stop(m_playbackDevice);
+        qDebug() << "Playback device stopped.";
+    }
+}
+
+void AudioEngine::setMonitoringVolume(float volume)
+{
+    m_monitoringVolume = std::max(0.0f, std::min(1.0f, volume));
+    qDebug() << "Monitoring volume set to" << m_monitoringVolume;
+}
+
+// Этот слот будет вызван безопасно в главном потоке
+void AudioEngine::postPlaybackFinished()
+{
+    stopAllSounds();
+    emit playbackFinished();
+    qDebug() << "Playback finished signal emitted.";
+}
