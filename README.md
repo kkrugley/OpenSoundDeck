@@ -1,6 +1,6 @@
 # 🔊 OpenSoundDeck
 
-**Your cross-platform, open-source soundboard for voice chats and streams. Inject high-quality audio directly into your microphone input, triggered by global hotkeys.**
+Cross-platform, open-source soundboard for voice chats and streams. Inject high-quality audio directly into your microphone input, triggered by global hotkeys.
 
 ---
 

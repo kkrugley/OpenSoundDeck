@@ -85,6 +85,8 @@ MainWindow::MainWindow(QWidget *parent)
     // Меню Window
     m_minimizeAction = new QAction(tr("Mi&nimize"), this);
     m_fullscreenAction = new QAction(tr("Toggle &Fullscreen"), this);
+    m_keepOnTopAction = new QAction(tr("Keep Above Others"), this);
+    m_keepOnTopAction->setCheckable(true);
     m_fullscreenAction->setCheckable(true);
 
     // Устанавливаем начальное состояние кнопок
@@ -137,6 +139,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_windowMenu->addAction(m_minimizeAction);
     m_windowMenu->addAction(m_fullscreenAction);
+    m_windowMenu->addSeparator();
+    m_windowMenu->addAction(m_keepOnTopAction);
 
     m_helpMenu->addAction(m_aboutAction);
     m_helpMenu->addAction(m_offlineManualAction);
@@ -207,6 +211,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Меню Window
     connect(m_minimizeAction, &QAction::triggered, this, &MainWindow::showMinimized);
+    connect(m_keepOnTopAction, &QAction::toggled, this, &MainWindow::onKeepOnTopToggled);
     connect(m_fullscreenAction, &QAction::toggled, this, [this](bool checked){ checked ? showFullScreen() : showNormal(); });
 
     // Audio
@@ -225,6 +230,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_headphonesButton, &QToolButton::toggled, this, &MainWindow::onHeadphonesToggle);
     connect(m_allButton, &QToolButton::toggled, this, &MainWindow::onAllToggle);
     connect(m_repeatButton, &QToolButton::toggled, this, &MainWindow::onRepeatToggle);
+
+    // Таблица
+    connect(m_soundTableWidget, &QTableWidget::itemDoubleClicked, this, &MainWindow::onSoundTableDoubleClicked);
 
     // --- 6. НАСТРОЙКИ ОКНА ---
     setWindowTitle("OpenSoundDeck v0.1 (dev)");
@@ -335,6 +343,29 @@ void MainWindow::onAboutClicked()
     aboutBox.exec();
 }
 
+void MainWindow::onSoundTableDoubleClicked(QTableWidgetItem *item)
+{
+    if (!item) {
+        return;
+    }
+
+    const int row = item->row();
+    QTableWidgetItem *tagItem = m_soundTableWidget->item(row, 1);
+    if (!tagItem) {
+        qDebug() << "Invalid tag item on double-click.";
+        return;
+    }
+
+    const QString filePath = tagItem->data(Qt::UserRole).toString();
+    if (filePath.isEmpty()) {
+        qDebug() << "No file path associated with this item.";
+        return;
+    }
+
+    m_audioEngine->playSound(filePath);
+    updatePlaybackButtons(true);
+}
+
 void MainWindow::onOpenTriggered()
 {
     const QStringList fileNames = QFileDialog::getOpenFileNames(this,
@@ -352,6 +383,28 @@ void MainWindow::onOpenTriggered()
 void MainWindow::onOfflineManualClicked()
 {
     QMessageBox::information(this, tr("Offline Manual"), tr("This feature is not implemented yet."));
+}
+
+void MainWindow::onKeepOnTopToggled(bool checked)
+{
+    // Сохраняем текущее состояние окна, так как setWindowFlags может его сбросить
+    const bool isMax = isMaximized();
+    const bool isMin = isMinimized();
+
+    Qt::WindowFlags flags = windowFlags();
+    if (checked) {
+        flags |= Qt::WindowStaysOnTopHint;
+    } else {
+        flags &= ~Qt::WindowStaysOnTopHint;
+    }
+
+    // Применяем новые флаги. Это может скрыть окно.
+    setWindowFlags(flags);
+
+    // Восстанавливаем состояние окна и показываем его
+    if (isMax) showMaximized();
+    else if (isMin) showMinimized();
+    else show();
 }
 
 void MainWindow::onPlayClicked()
@@ -375,30 +428,27 @@ void MainWindow::onPlayClicked()
         m_audioEngine->playSound(filePath);
     }
 
-    m_playAction->setEnabled(false);
-    m_pauseAction->setEnabled(true);
-    m_stopAction->setEnabled(true);
+    updatePlaybackButtons(true);
 }
 
 void MainWindow::onPauseClicked()
 {
     m_audioEngine->pause();
-    m_playAction->setEnabled(true);
-    m_pauseAction->setEnabled(false);
+    updatePlaybackButtons(false);
 }
 
 void MainWindow::onPlaybackFinished()
 {
-    m_playAction->setEnabled(true);
-    m_pauseAction->setEnabled(false);
-    m_stopAction->setEnabled(false);
+    // Если воспроизведение закончилось, UI должен быть как при остановке
+    updatePlaybackButtons(false);
+    m_playAction->setEnabled(true); // Но кнопка Play должна быть доступна
     m_progressSlider->setValue(0);
 }
 
 void MainWindow::onStopClicked()
 {
     m_audioEngine->stopAllSounds(); // <-- ИСПОЛЬЗУЕМ НАШ ДВИЖОК
-    onPlaybackFinished(); // Обновляем UI немедленно
+    updatePlaybackButtons(false); // Обновляем UI немедленно
     qDebug() << "Stop command sent to audio engine.";
 }
 
@@ -442,4 +492,11 @@ void MainWindow::onDurationChanged(qint64 duration)
             }
         }
     }
+}
+
+void MainWindow::updatePlaybackButtons(bool isPlaying)
+{
+    m_playAction->setEnabled(!isPlaying);
+    m_pauseAction->setEnabled(isPlaying);
+    m_stopAction->setEnabled(isPlaying);
 }

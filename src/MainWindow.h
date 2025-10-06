@@ -25,6 +25,7 @@
 #include "AudioEngine.h"
 
 class QTableWidget;
+class QTableWidgetItem;
 class QToolBar;
 class QAction;
 class QDragEnterEvent;
@@ -51,6 +52,7 @@ private slots:
     void onPauseClicked();
     void onStopClicked();
     void onOpenTriggered();
+    void onSoundTableDoubleClicked(QTableWidgetItem *item);
     void onExitTriggered();    
 
     void onProgressSliderMoved(int position);
@@ -61,6 +63,7 @@ private slots:
     void onRepeatToggle(bool checked);
     void onDurationChanged(qint64 duration);
     void onAboutClicked();
+    void onKeepOnTopToggled(bool checked);
     void onOfflineManualClicked();
     void onPlaybackFinished();
 
@@ -73,6 +76,7 @@ protected:
 private:
     void updateIndexes();
     void addSoundFile(const QString& filePath);
+    void updatePlaybackButtons(bool isPlaying);
 
     // System Menu
     QMenuBar *m_menuBar;
@@ -101,6 +105,7 @@ private:
     // Window Actions
     QAction *m_minimizeAction;
     QAction *m_fullscreenAction;
+    QAction *m_keepOnTopAction;
 
     //
 
