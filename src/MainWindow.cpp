@@ -20,6 +20,7 @@
 
 #include "MainWindow.h"
 
+#include <QApplication>
 #include <QTableWidget>
 #include <QVBoxLayout>
 #include <QDebug>
@@ -54,11 +55,24 @@ MainWindow::MainWindow(QWidget *parent)
     m_metaDataReader = new QMediaPlayer(this);
 
     // --- 2. СОЗДАНИЕ ДЕЙСТВИЙ (ACTIONS) ---
-    // Меню
+    // Меню File
+    m_newAction = new QAction(tr("&New"), this);
+    m_openAction = new QAction(tr("&Open..."), this);
+    m_saveAction = new QAction(tr("&Save"), this);
+    m_saveAsAction = new QAction(tr("Save &As..."), this);
     m_exitAction = new QAction(tr("&Exit"), this);
     m_exitAction->setShortcut(QKeySequence::Quit);
 
-    // Панель инструментов
+    // Меню Edit
+    m_cutAction = new QAction(tr("Cu&t"), this);
+    m_copyAction = new QAction(tr("&Copy"), this);
+    m_pasteAction = new QAction(tr("&Paste"), this);
+
+    // Меню Help
+    m_infoAction = new QAction(tr("&Info"), this);
+
+
+    // Панель инструментов (Playback)
     m_playAction = new QAction(style()->standardIcon(QStyle::SP_MediaPlay), tr("Play"), this);
     m_pauseAction = new QAction(style()->standardIcon(QStyle::SP_MediaPause), tr("Pause"), this);
     m_stopAction = new QAction(style()->standardIcon(QStyle::SP_MediaStop), tr("Stop"), this);
@@ -93,7 +107,18 @@ MainWindow::MainWindow(QWidget *parent)
 
     // --- 4. НАСТРОЙКА ВИДЖЕТОВ И КОМПОНОВКА ---
     // Меню
+    m_fileMenu->addAction(m_newAction);
+    m_fileMenu->addAction(m_openAction);
+    m_fileMenu->addAction(m_saveAction);
+    m_fileMenu->addAction(m_saveAsAction);
+    m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_exitAction);
+
+    m_editMenu->addAction(m_cutAction);
+    m_editMenu->addAction(m_copyAction);
+    m_editMenu->addAction(m_pasteAction);
+
+    m_helpMenu->addAction(m_infoAction);
     
     // Панель инструментов
     m_playbackToolBar->addAction(m_playAction);
@@ -152,6 +177,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Меню
     connect(m_exitAction, &QAction::triggered, this, &MainWindow::onExitTriggered);
+    connect(m_infoAction, &QAction::triggered, this, &MainWindow::onInfoClicked);
 
     // Audio
     connect(m_audioEngine, &AudioEngine::durationReady, m_progressSlider, &QSlider::setMaximum);
@@ -258,6 +284,16 @@ void MainWindow::updateIndexes()
 void MainWindow::onExitTriggered()
 {
     qApp->quit();
+}
+
+void MainWindow::onInfoClicked()
+{
+    QMessageBox::about(this, tr("About OpenSoundDeck"),
+        tr("<h2>OpenSoundDeck 0.1 (dev)</h2>"
+           "<p>Copyright &copy; 2025 Pavel Kruhlei</p>"
+           "<p>This is a simple sound deck application for playing audio files.</p>"
+           "<p>This program is distributed under the terms of the GNU GPLv3.</p>"
+           "<p>Built with Qt and miniaudio.</p>"));
 }
 
 void MainWindow::onPlayClicked()
