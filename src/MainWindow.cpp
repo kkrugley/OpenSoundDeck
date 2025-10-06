@@ -1,5 +1,6 @@
 /*src/MainWindow.cpp*/
 
+/* src/MainWindow.cpp */
 /*
  * OpenSoundDeck
  * Copyright (C) 2025 Pavel Kruhlei
@@ -19,6 +20,7 @@
  */
 
 #include "MainWindow.h"
+#include "SettingsDialog.h"
 
 #include <QApplication>
 #include <QTableWidget>
@@ -42,6 +44,7 @@
 #include <QToolButton>
 #include <QLabel>
 #include <QMessageBox>
+#include <QSettings>
 #include <QMediaPlayer>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -50,6 +53,7 @@ MainWindow::MainWindow(QWidget *parent)
     // --- 1. ИНИЦИАЛИЗАЦИЯ СЛУЖЕБНЫХ ОБЪЕКТОВ ---
     m_audioEngine = new AudioEngine(this);
     if (!m_audioEngine->init()) {
+        // TODO: Handle audio engine initialization failure more gracefully
         QMessageBox::critical(this, tr("Fatal Error"), tr("Failed to initialize audio engine. The application will now close."));
         // В реальном приложении можно было бы запланировать закрытие, но для простоты пока оставим так
     }
@@ -57,17 +61,27 @@ MainWindow::MainWindow(QWidget *parent)
 
     // --- 2. СОЗДАНИЕ ДЕЙСТВИЙ (ACTIONS) ---
     // Меню File
-    m_newAction = new QAction(tr("&New"), this);
-    m_openAction = new QAction(tr("&Open..."), this);
-    m_saveAction = new QAction(tr("&Save"), this);
-    m_saveAsAction = new QAction(tr("Save &As..."), this);
+    m_newAction = new QAction(tr("&New Playlist"), this);
+    m_isRepeatEnabled = false;
+    m_openAction = new QAction(tr("&Open Playlist"), this);
+    m_importAction = new QAction(tr("&Import Audio"), this);
+    m_saveAction = new QAction(tr("&Save Playlist"), this);
+    m_saveAsAction = new QAction(tr("Save Playlist &As..."), this);
     m_exitAction = new QAction(tr("&Exit"), this);
-    m_exitAction->setShortcut(QKeySequence::Quit);
+
+    m_newAction->setShortcut(QKeySequence::New);
+    m_openAction->setShortcut(QKeySequence::Open);
+    m_importAction->setShortcut(tr("Ctrl+I"));
+    m_saveAction->setShortcut(QKeySequence::Save);
+    m_saveAsAction->setShortcut(QKeySequence::SaveAs); // Standard is Ctrl+Shift+S, but we'll use what's requested
+    m_exitAction->setShortcut(QKeySequence::Quit); // Ctrl+Q
 
     // Меню Edit
     m_cutAction = new QAction(tr("Cu&t"), this);
     m_copyAction = new QAction(tr("&Copy"), this);
+    m_settingsAction = new QAction(tr("&Settings..."), this);
     m_pasteAction = new QAction(tr("&Paste"), this);
+    m_settingsAction->setShortcut(tr("Ctrl+P"));
 
     // Меню Help
     m_aboutAction = new QAction(tr("&About"), this);
@@ -124,12 +138,16 @@ MainWindow::MainWindow(QWidget *parent)
     m_fileMenu->addAction(m_saveAction);
     m_fileMenu->addAction(m_saveAsAction);
     m_fileMenu->addSeparator();
+    m_fileMenu->addAction(m_importAction);
+    m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_exitAction);
 
     m_editMenu->addAction(m_cutAction);
     m_editMenu->addAction(m_copyAction);
     m_editMenu->addAction(m_pasteAction);
-
+    m_editMenu->addSeparator();
+    m_editMenu->addAction(m_settingsAction);
+    
     m_playMenu->addAction(m_playAction);
     m_playMenu->addAction(m_pauseAction);
     m_playMenu->addAction(m_stopAction);
@@ -193,6 +211,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_repeatButton->setText(QString::fromUtf8("↻"));
     m_repeatButton->setCheckable(true);
     m_repeatButton->setToolTip(tr("Repeat playback"));
+
     statusBar()->addWidget(m_headphonesButton);
     statusBar()->addWidget(m_allButton);
     statusBar()->addWidget(m_statusLabel);
@@ -204,7 +223,12 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Меню
     connect(m_exitAction, &QAction::triggered, this, &MainWindow::onExitTriggered);
+    connect(m_newAction, &QAction::triggered, this, &MainWindow::onNewTriggered);
     connect(m_openAction, &QAction::triggered, this, &MainWindow::onOpenTriggered);
+    connect(m_importAction, &QAction::triggered, this, &MainWindow::onImportTriggered);
+    connect(m_saveAction, &QAction::triggered, this, &MainWindow::onSaveTriggered);
+    connect(m_saveAsAction, &QAction::triggered, this, &MainWindow::onSaveAsTriggered);
+    connect(m_settingsAction, &QAction::triggered, this, &MainWindow::onSettingsClicked);
     connect(m_aboutAction, &QAction::triggered, this, &MainWindow::onAboutClicked);
     connect(m_offlineManualAction, &QAction::triggered, this, &MainWindow::onOfflineManualClicked);
     connect(m_aboutQtAction, &QAction::triggered, qApp, &QApplication::aboutQt);
@@ -223,6 +247,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_playAction, &QAction::triggered, this, &MainWindow::onPlayClicked);
     connect(m_pauseAction, &QAction::triggered, this, &MainWindow::onPauseClicked);
     connect(m_stopAction, &QAction::triggered, this, &MainWindow::onStopClicked);
+    connect(m_nextAction, &QAction::triggered, this, &MainWindow::onNextClicked);
+    connect(m_prevAction, &QAction::triggered, this, &MainWindow::onPrevClicked);
     connect(m_progressSlider, &QSlider::sliderMoved, this, &MainWindow::onProgressSliderMoved);
     connect(m_headphonesVolumeSlider, &QSlider::valueChanged, this, &MainWindow::onHeadphonesVolumeChanged);
     connect(m_micVolumeSlider, &QSlider::valueChanged, this, &MainWindow::onMicVolumeChanged);
@@ -350,29 +376,63 @@ void MainWindow::onSoundTableDoubleClicked(QTableWidgetItem *item)
         return;
     }
 
-    const int row = item->row();
-    QTableWidgetItem *tagItem = m_soundTableWidget->item(row, 1);
-    if (!tagItem) {
-        qDebug() << "Invalid tag item on double-click.";
-        return;
-    }
+    playTrackAtRow(item->row());
+}
 
-    const QString filePath = tagItem->data(Qt::UserRole).toString();
-    if (filePath.isEmpty()) {
-        qDebug() << "No file path associated with this item.";
-        return;
-    }
+void MainWindow::onSettingsClicked()
+{
+    SettingsDialog dialog(this);
+    dialog.exec();
+}
 
-    m_audioEngine->playSound(filePath);
-    updatePlaybackButtons(true);
+void MainWindow::onNewTriggered()
+{
+    // TODO: Prompt to save if modified
+    m_soundTableWidget->setRowCount(0);
+    m_currentPlaylistPath.clear();
 }
 
 void MainWindow::onOpenTriggered()
 {
-    const QStringList fileNames = QFileDialog::getOpenFileNames(this,
-                                                              tr("Open Audio Files"),
-                                                              QStandardPaths::writableLocation(QStandardPaths::MusicLocation),
-                                                              tr("Audio Files (*.mp3 *.wav *.flac *.ogg)"));
+    const QString libraryPath = getLibraryPath();
+    const QStringList fileNames = QFileDialog::getOpenFileNames(
+        this,
+        tr("Open Files"),
+        libraryPath,
+        tr("Playlist Files (*.osdpl)"));
+
+    if (fileNames.isEmpty()) {
+        return;
+    }
+
+    QFile file(fileNames.first());
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QMessageBox::warning(this, tr("Error"), tr("Could not open playlist file."));
+            return;
+        }
+
+        m_soundTableWidget->setRowCount(0); // Очищаем таблицу
+
+        QTextStream in(&file);
+        while (!in.atEnd()) {
+            QString line = in.readLine();
+            if (!line.trimmed().isEmpty()) {
+                addSoundFile(line);
+            }
+        }
+        file.close();
+        m_currentPlaylistPath = fileNames.first();
+        qDebug() << "Playlist loaded from" << m_currentPlaylistPath;
+}
+
+void MainWindow::onImportTriggered()
+{
+    const QString libraryPath = getLibraryPath();
+    const QStringList fileNames = QFileDialog::getOpenFileNames(
+        this,
+        tr("Import Audio Files"),
+        libraryPath,
+        tr("Audio Files (*.mp3 *.wav *.flac *.ogg)"));
 
     for (const QString &fileName : fileNames) {
         if (!fileName.isEmpty()) {
@@ -381,6 +441,48 @@ void MainWindow::onOpenTriggered()
     }
 }
 
+void MainWindow::onSaveTriggered()
+{
+    if (m_currentPlaylistPath.isEmpty()) {
+        onSaveAsTriggered();
+    } else {
+        savePlaylist(m_currentPlaylistPath);
+    }
+}
+
+void MainWindow::onSaveAsTriggered()
+{
+    const QString libraryPath = getLibraryPath();
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save Playlist"), libraryPath, tr("Playlist Files (*.osdpl)"));
+
+    if (!fileName.isEmpty()) {
+        savePlaylist(fileName);
+    }
+}
+
+void MainWindow::savePlaylist(const QString& fileName)
+{
+    QFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, tr("Error"), tr("Could not save playlist file."));
+        return;
+    }
+
+    QTextStream out(&file);
+    for (int i = 0; i < m_soundTableWidget->rowCount(); ++i) {
+        QTableWidgetItem *item = m_soundTableWidget->item(i, 1); // Колонка "Tag"
+        if (item) {
+            QString filePath = item->data(Qt::UserRole).toString();
+            if (!filePath.isEmpty()) {
+                out << filePath << "\n";
+            }
+        }
+    }
+
+    file.close();
+    m_currentPlaylistPath = fileName;
+    qDebug() << "Playlist saved to" << m_currentPlaylistPath;
+}
 void MainWindow::onOfflineManualClicked()
 {
     QMessageBox::information(this, tr("Offline Manual"), tr("This feature is not implemented yet."));
@@ -419,17 +521,8 @@ void MainWindow::onPlayClicked()
             return;
         }
 
-        QTableWidgetItem *tagItem = m_soundTableWidget->item(currentRow, 1);
-        if (!tagItem) {
-            qDebug() << "Invalid item at selected row.";
-            return;
-        }
-
-        const QString filePath = tagItem->data(Qt::UserRole).toString();
-        m_audioEngine->playSound(filePath);
+        playTrackAtRow(currentRow);
     }
-
-    updatePlaybackButtons(true);
 }
 
 void MainWindow::onPauseClicked()
@@ -438,12 +531,71 @@ void MainWindow::onPauseClicked()
     updatePlaybackButtons(false);
 }
 
+void MainWindow::onNextClicked()
+{
+    const int rowCount = m_soundTableWidget->rowCount();
+    if (rowCount == 0) {
+        return;
+    }
+
+    int nextRow = m_soundTableWidget->currentRow() + 1;
+    if (nextRow >= rowCount) {
+        nextRow = 0; // Зацикливание на начало списка
+    }
+
+    playTrackAtRow(nextRow);
+}
+
+void MainWindow::onPrevClicked()
+{
+    const int rowCount = m_soundTableWidget->rowCount();
+    if (rowCount == 0) {
+        return;
+    }
+
+    int prevRow = m_soundTableWidget->currentRow() - 1;
+    if (prevRow < 0) {
+        prevRow = rowCount - 1; // Зацикливание на конец списка
+    }
+
+    playTrackAtRow(prevRow);
+}
+
+void MainWindow::playTrackAtRow(int row)
+{
+    if (row < 0 || row >= m_soundTableWidget->rowCount()) {
+        qDebug() << "Invalid row index to play:" << row;
+        return;
+    }
+
+    QTableWidgetItem *tagItem = m_soundTableWidget->item(row, 1);
+    if (!tagItem) {
+        qDebug() << "Invalid tag item at row" << row;
+        return;
+    }
+
+    const QString filePath = tagItem->data(Qt::UserRole).toString();
+    if (filePath.isEmpty()) {
+        qDebug() << "No file path associated with row" << row;
+        return;
+    }
+
+    m_soundTableWidget->setCurrentCell(row, 0); // Выделяем новую строку
+    m_audioEngine->playSound(filePath);
+    updatePlaybackButtons(true);
+}
+
 void MainWindow::onPlaybackFinished()
 {
-    // Если воспроизведение закончилось, UI должен быть как при остановке
-    updatePlaybackButtons(false);
-    m_playAction->setEnabled(true); // Но кнопка Play должна быть доступна
-    m_progressSlider->setValue(0);
+    if (m_isRepeatEnabled) {
+        // Если включен повтор, просто проигрываем текущий трек заново
+        playTrackAtRow(m_soundTableWidget->currentRow());
+    } else {
+        // Иначе, останавливаем воспроизведение
+        updatePlaybackButtons(false);
+        m_playAction->setEnabled(true); // Но кнопка Play должна быть доступна
+        m_progressSlider->setValue(0);
+    }
 }
 
 void MainWindow::onStopClicked()
@@ -481,7 +633,11 @@ void MainWindow::onMicVolumeChanged(int value)
 
 void MainWindow::onHeadphonesToggle(bool checked) { qDebug() << "Headphones output" << (checked ? "ENABLED" : "DISABLED"); }
 void MainWindow::onAllToggle(bool checked) { qDebug() << "All (mic) output" << (checked ? "ENABLED" : "DISABLED"); }
-void MainWindow::onRepeatToggle(bool checked) { qDebug() << "Repeat" << (checked ? "ON" : "OFF"); }
+void MainWindow::onRepeatToggle(bool checked)
+{
+    m_isRepeatEnabled = checked;
+    qDebug() << "Repeat" << (checked ? "ON" : "OFF");
+}
 
 void MainWindow::onDurationChanged(qint64 duration)
 {
@@ -506,4 +662,11 @@ void MainWindow::updatePlaybackButtons(bool isPlaying)
     m_playAction->setEnabled(!isPlaying);
     m_pauseAction->setEnabled(isPlaying);
     m_stopAction->setEnabled(isPlaying);
+}
+
+QString MainWindow::getLibraryPath() const
+{
+    QSettings settings("kkrugley", "OpenSoundDeck");
+    QString defaultPath = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
+    return settings.value("library/path", defaultPath).toString();
 }

@@ -33,6 +33,7 @@ endif()
 set(APP_SOURCES
     src/main.cpp
     src/MainWindow.cpp
+    src/SettingsDialog.cpp
     src/AudioEngine.cpp
     resources.qrc
 )

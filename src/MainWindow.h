@@ -38,6 +38,7 @@ class QStatusBar;
 class QToolButton;
 class QLabel;
 class QMediaPlayer;
+class SettingsDialog;
 
 class MainWindow : public QMainWindow
 {
@@ -51,8 +52,15 @@ private slots:
     void onPlayClicked();
     void onPauseClicked();
     void onStopClicked();
+    void onNextClicked();
+    void onPrevClicked();
+    void onNewTriggered();
     void onOpenTriggered();
+    void onImportTriggered();
     void onSoundTableDoubleClicked(QTableWidgetItem *item);
+    void onSaveTriggered();
+    void onSaveAsTriggered();
+    void onSettingsClicked();
     void onExitTriggered();    
 
     void onProgressSliderMoved(int position);
@@ -77,7 +85,11 @@ protected:
 private:
     void updateIndexes();
     void addSoundFile(const QString& filePath);
+    void playTrackAtRow(int row);
     void updatePlaybackButtons(bool isPlaying);
+    void savePlaylist(const QString& fileName);
+    QString getLibraryPath() const;
+    bool m_isRepeatEnabled;
 
     // System Menu
     QMenuBar *m_menuBar;
@@ -90,6 +102,7 @@ private:
     // File Actions
     QAction *m_newAction;
     QAction *m_openAction;
+    QAction *m_importAction;
     QAction *m_saveAction;
     QAction *m_saveAsAction;
     QAction *m_exitAction;
@@ -97,6 +110,7 @@ private:
     // Edit Actions
     QAction *m_cutAction;
     QAction *m_copyAction;
+    QAction *m_settingsAction;
     QAction *m_pasteAction;
 
     // Play Actions
@@ -137,4 +151,7 @@ private:
 
     QMediaPlayer *m_metaDataReader;
     AudioEngine *m_audioEngine;
+
+    // Playlist
+    QString m_currentPlaylistPath;
 };
