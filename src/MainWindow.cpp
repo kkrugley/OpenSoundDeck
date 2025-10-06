@@ -21,6 +21,8 @@
 
 #include "MainWindow.h"
 #include "SettingsDialog.h"
+#include "GlobalHotkeyManager.h"
+#include "HotkeyCaptureDialog.h"
 
 #include <QApplication>
 #include <QTableWidget>
@@ -58,6 +60,10 @@ MainWindow::MainWindow(QWidget *parent)
         // В реальном приложении можно было бы запланировать закрытие, но для простоты пока оставим так
     }
     m_metaDataReader = new QMediaPlayer(this);
+    m_hotkeyManager = new GlobalHotkeyManager(this);
+    connect(m_hotkeyManager, &GlobalHotkeyManager::hotkeyActivated, this, [this](int row){
+        playTrackAtRow(row);
+    });
 
     // --- 2. СОЗДАНИЕ ДЕЙСТВИЙ (ACTIONS) ---
     // Меню File
@@ -464,6 +470,8 @@ void MainWindow::onSoundTableContextMenuRequested(const QPoint &pos)
 
     QMenu contextMenu(this);
     QAction *renameAction = contextMenu.addAction(tr("Rename"));
+    QAction *assignHotkeyAction = contextMenu.addAction(tr("Assign Hotkey"));
+
     contextMenu.addSeparator();
     QAction *moveUpAction = contextMenu.addAction(tr("Move Up"));
     QAction *moveDownAction = contextMenu.addAction(tr("Move Down"));
@@ -484,6 +492,7 @@ void MainWindow::onSoundTableContextMenuRequested(const QPoint &pos)
     }
 
     connect(renameAction, &QAction::triggered, this, &MainWindow::onRenameTrack);
+    connect(assignHotkeyAction, &QAction::triggered, this, &MainWindow::onAssignHotkey);
     connect(removeAction, &QAction::triggered, this, &MainWindow::onRemoveTrack);
     connect(duplicateAction, &QAction::triggered, this, &MainWindow::onDuplicateTrack);
     connect(moveUpAction, &QAction::triggered, this, &MainWindow::onMoveTrackUp);
@@ -507,6 +516,7 @@ void MainWindow::onRenameTrack()
 void MainWindow::onRemoveTrack()
 {
     int currentRow = m_soundTableWidget->currentRow();
+    m_hotkeyManager->unregisterHotkey(currentRow);
     if (currentRow >= 0) {
         m_soundTableWidget->removeRow(currentRow);
         updateIndexes();
@@ -875,6 +885,32 @@ void MainWindow::updatePlaybackButtons(bool isPlaying)
     m_playAction->setEnabled(!isPlaying);
     m_pauseAction->setEnabled(isPlaying);
     m_stopAction->setEnabled(isPlaying);
+}
+
+void MainWindow::onAssignHotkey()
+{
+    const int currentRow = m_soundTableWidget->currentRow();
+    if (currentRow < 0) {
+        return;
+    }
+
+    HotkeyCaptureDialog dialog(this);
+    if (dialog.exec() == QDialog::Accepted) {
+        QKeySequence hotkey = dialog.getHotkey();
+
+        // Сначала отменяем регистрацию старого хоткея для этой строки, если он был
+        m_hotkeyManager->unregisterHotkey(currentRow);
+
+        if (!hotkey.isEmpty()) {
+            // Регистрируем новый хоткей
+            if (m_hotkeyManager->registerHotkey(hotkey, currentRow)) {
+                m_soundTableWidget->item(currentRow, 3)->setText(hotkey.toString(QKeySequence::NativeText));
+            } else {
+                QMessageBox::warning(this, tr("Hotkey Error"), tr("Failed to register hotkey. It might be already in use by another application."));
+                m_soundTableWidget->item(currentRow, 3)->setText("None");
+            }
+        }
+    }
 }
 
 QString MainWindow::getLibraryPath() const

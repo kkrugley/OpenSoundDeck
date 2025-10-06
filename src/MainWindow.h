@@ -24,6 +24,7 @@
 #include <QKeyEvent>
 #include "AudioEngine.h"
 
+class GlobalHotkeyManager;
 class QTableWidget;
 class QTableWidgetItem;
 class QToolBar;
@@ -65,6 +66,7 @@ private slots:
     void onDuplicateTrack();
     void onMoveTrackUp();
     void onMoveTrackDown();
+    void onAssignHotkey();
     void onSaveTriggered();
     void onSaveAsTriggered();
     void onSettingsClicked();
@@ -167,6 +169,9 @@ private:
 
     // Playlist
     QString m_currentPlaylistPath;
+
+    // Hotkeys
+    GlobalHotkeyManager* m_hotkeyManager;
 
     // Volume state
     int m_headphonesVolume;

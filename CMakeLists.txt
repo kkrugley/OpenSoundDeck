@@ -21,11 +21,13 @@ include_directories(third_party/miniaudio)
 if (UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(ALSA REQUIRED alsa)
-    pkg_check_modules(LIBPULSE REQUIRED libpulse)
+    pkg_check_modules(LIBPULSE REQUIRED libpulse)    
+    find_package(X11 REQUIRED)
     
     # Добавляем пути к заголовочным файлам системных библиотек
     include_directories(${ALSA_INCLUDE_DIRS})
     include_directories(${LIBPULSE_INCLUDE_DIRS})
+    include_directories(${X11_INCLUDE_DIR})
 endif()
 
 # Добавляем наш исполняемый файл "OpenSoundDeck"
@@ -34,6 +36,8 @@ set(APP_SOURCES
     src/main.cpp
     src/MainWindow.cpp
     src/SettingsDialog.cpp
+    src/HotkeyCaptureDialog.cpp
+    src/GlobalHotkeyManager.cpp
     src/AudioEngine.cpp
     resources.qrc
 )
@@ -57,6 +61,7 @@ if (UNIX AND NOT APPLE)
     target_link_libraries(OpenSoundDeck PRIVATE
         ${ALSA_LIBRARIES}
         ${LIBPULSE_LIBRARIES}
+        ${X11_LIBRARIES}
         pthread
     )
 endif()
