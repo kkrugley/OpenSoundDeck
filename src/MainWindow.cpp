@@ -23,6 +23,7 @@
 #include <QApplication>
 #include <QTableWidget>
 #include <QVBoxLayout>
+#include <QStandardPaths>
 #include <QDebug>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -199,6 +200,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Меню
     connect(m_exitAction, &QAction::triggered, this, &MainWindow::onExitTriggered);
+    connect(m_openAction, &QAction::triggered, this, &MainWindow::onOpenTriggered);
     connect(m_aboutAction, &QAction::triggered, this, &MainWindow::onAboutClicked);
     connect(m_offlineManualAction, &QAction::triggered, this, &MainWindow::onOfflineManualClicked);
     connect(m_aboutQtAction, &QAction::triggered, qApp, &QApplication::aboutQt);
@@ -333,6 +335,20 @@ void MainWindow::onAboutClicked()
     aboutBox.exec();
 }
 
+void MainWindow::onOpenTriggered()
+{
+    const QStringList fileNames = QFileDialog::getOpenFileNames(this,
+                                                              tr("Open Audio Files"),
+                                                              QStandardPaths::writableLocation(QStandardPaths::MusicLocation),
+                                                              tr("Audio Files (*.mp3 *.wav *.flac *.ogg)"));
+
+    for (const QString &fileName : fileNames) {
+        if (!fileName.isEmpty()) {
+            addSoundFile(fileName);
+        }
+    }
+}
+
 void MainWindow::onOfflineManualClicked()
 {
     QMessageBox::information(this, tr("Offline Manual"), tr("This feature is not implemented yet."));
@@ -340,23 +356,35 @@ void MainWindow::onOfflineManualClicked()
 
 void MainWindow::onPlayClicked()
 {
-    const int currentRow = m_soundTableWidget->currentRow();
-    if (currentRow < 0 || m_soundTableWidget->rowCount() == 0) {
-        qDebug() << "No sound selected to play.";
-        return;
+    if (m_audioEngine->getPlaybackState() == AudioEngine::Paused) {
+        m_audioEngine->resume();
+    } else {
+        const int currentRow = m_soundTableWidget->currentRow();
+        if (currentRow < 0 || m_soundTableWidget->rowCount() == 0) {
+            qDebug() << "No sound selected to play.";
+            return;
+        }
+
+        QTableWidgetItem *tagItem = m_soundTableWidget->item(currentRow, 1);
+        if (!tagItem) {
+            qDebug() << "Invalid item at selected row.";
+            return;
+        }
+
+        const QString filePath = tagItem->data(Qt::UserRole).toString();
+        m_audioEngine->playSound(filePath);
     }
 
-    QTableWidgetItem *tagItem = m_soundTableWidget->item(currentRow, 1);
-    if (!tagItem) {
-        qDebug() << "Invalid item at selected row.";
-        return;
-    }
-
-    const QString filePath = tagItem->data(Qt::UserRole).toString();
-    m_audioEngine->playSound(filePath);
     m_playAction->setEnabled(false);
     m_pauseAction->setEnabled(true);
     m_stopAction->setEnabled(true);
+}
+
+void MainWindow::onPauseClicked()
+{
+    m_audioEngine->pause();
+    m_playAction->setEnabled(true);
+    m_pauseAction->setEnabled(false);
 }
 
 void MainWindow::onPlaybackFinished()
@@ -365,12 +393,6 @@ void MainWindow::onPlaybackFinished()
     m_pauseAction->setEnabled(false);
     m_stopAction->setEnabled(false);
     m_progressSlider->setValue(0);
-}
-
-void MainWindow::onPauseClicked()
-{
-    // TODO: Реализовать паузу в AudioEngine
-    qDebug() << "Pause is not implemented yet.";
 }
 
 void MainWindow::onStopClicked()

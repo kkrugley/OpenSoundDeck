@@ -30,13 +30,22 @@ class AudioEngine : public QObject
     Q_OBJECT
 
 public:
+    enum PlaybackState {
+        Stopped,
+        Playing,
+        Paused
+    };
+
     explicit AudioEngine(QObject *parent = nullptr);
     ~AudioEngine();
 
     bool init();
     void playSound(const QString& filePath);
+    void pause();
+    void resume();
     void stopAllSounds();
     void setMonitoringVolume(float volume);
+    PlaybackState getPlaybackState() const;
 
 signals:
     // Сигналы для обратной связи с UI
@@ -55,4 +64,5 @@ private:
 
     float m_monitoringVolume;
     bool m_isDeviceInitialized;
+    PlaybackState m_playbackState;
 };

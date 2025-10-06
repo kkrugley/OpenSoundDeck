@@ -57,7 +57,8 @@ AudioEngine::AudioEngine(QObject *parent)
       m_playbackDevice(new ma_device),
       m_pDecoder(nullptr), // Инициализируем атомарный указатель как nullptr
       m_monitoringVolume(1.0f),
-      m_isDeviceInitialized(false)
+      m_isDeviceInitialized(false),
+      m_playbackState(Stopped)
 {
 }
 
@@ -140,7 +141,30 @@ void AudioEngine::playSound(const QString &filePath)
     // Атомарно подменяем указатель на новый декодер
     m_pDecoder.store(pNewDecoder);
 
+    m_playbackState = Playing;
     qDebug() << "Playback started for:" << filePath;
+}
+
+void AudioEngine::pause()
+{
+    if (m_playbackState == Playing && m_isDeviceInitialized && ma_device_is_started(m_playbackDevice)) {
+        ma_device_stop(m_playbackDevice);
+        m_playbackState = Paused;
+        qDebug() << "Playback paused.";
+    }
+}
+
+void AudioEngine::resume()
+{
+    if (m_playbackState == Paused && m_isDeviceInitialized) {
+        if (ma_device_start(m_playbackDevice) != MA_SUCCESS) {
+            qWarning() << "Failed to resume playback device.";
+            stopAllSounds(); // В случае ошибки останавливаем все
+            return;
+        }
+        m_playbackState = Playing;
+        qDebug() << "Playback resumed.";
+    }
 }
 
 void AudioEngine::stopAllSounds()
@@ -157,6 +181,7 @@ void AudioEngine::stopAllSounds()
 
     if (m_isDeviceInitialized && ma_device_is_started(m_playbackDevice)) {
         ma_device_stop(m_playbackDevice);
+        m_playbackState = Stopped;
         qDebug() << "Playback device stopped.";
     }
 }
@@ -165,6 +190,11 @@ void AudioEngine::setMonitoringVolume(float volume)
 {
     m_monitoringVolume = std::max(0.0f, std::min(1.0f, volume));
     qDebug() << "Monitoring volume set to" << m_monitoringVolume;
+}
+
+AudioEngine::PlaybackState AudioEngine::getPlaybackState() const
+{
+    return m_playbackState;
 }
 
 // Этот слот будет вызван безопасно в главном потоке

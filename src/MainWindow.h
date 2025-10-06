@@ -50,6 +50,7 @@ private slots:
     void onPlayClicked();
     void onPauseClicked();
     void onStopClicked();
+    void onOpenTriggered();
     void onExitTriggered();    
 
     void onProgressSliderMoved(int position);
