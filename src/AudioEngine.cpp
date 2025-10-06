@@ -42,8 +42,21 @@ void AudioEngine::dataCallback(ma_device* pDevice, void* pOutput, const void* pI
         return;
     }
 
+    // 1. Проверка на запрос перемотки
+    ma_int64 seekRequest = engine->m_seekRequestMillis.exchange(-1);
+    if (seekRequest != -1) {
+        ma_uint64 targetFrame = (seekRequest * pDecoder->outputSampleRate) / 1000;
+        ma_decoder_seek_to_pcm_frame(pDecoder, targetFrame);
+        engine->m_currentPositionMillis.store(seekRequest);
+    }
+
+    // 2. Чтение данных
     ma_uint64 framesRead = 0;
     ma_decoder_read_pcm_frames(pDecoder, pOutput, frameCount, &framesRead);
+
+    // 3. Обновление текущей позиции
+    ma_uint64 positionIncrement = (framesRead * 1000) / pDecoder->outputSampleRate;
+    engine->m_currentPositionMillis.fetch_add(positionIncrement);
 
     if (framesRead < frameCount) {
         // Файл закончился. Безопасно просим главный поток вызвать postPlaybackFinished()
@@ -57,9 +70,14 @@ AudioEngine::AudioEngine(QObject *parent)
       m_playbackDevice(new ma_device),
       m_pDecoder(nullptr), // Инициализируем атомарный указатель как nullptr
       m_monitoringVolume(1.0f),
-      m_isDeviceInitialized(false),
-      m_playbackState(Stopped)
+      m_isDeviceInitialized(false),      
+      m_playbackState(Stopped),
+      m_seekRequestMillis(-1),
+      m_currentPositionMillis(0)
 {
+    m_positionUpdateTimer = new QTimer(this);
+    m_positionUpdateTimer->setInterval(100); // Обновлять позицию 10 раз в секунду
+    connect(m_positionUpdateTimer, &QTimer::timeout, this, &AudioEngine::onUpdatePositionTimer);
 }
 
 AudioEngine::~AudioEngine()
@@ -141,6 +159,9 @@ void AudioEngine::playSound(const QString &filePath)
     // Атомарно подменяем указатель на новый декодер
     m_pDecoder.store(pNewDecoder);
 
+    m_currentPositionMillis.store(0);
+    m_positionUpdateTimer->start();
+
     m_playbackState = Playing;
     qDebug() << "Playback started for:" << filePath;
 }
@@ -149,6 +170,7 @@ void AudioEngine::pause()
 {
     if (m_playbackState == Playing && m_isDeviceInitialized && ma_device_is_started(m_playbackDevice)) {
         ma_device_stop(m_playbackDevice);
+        m_positionUpdateTimer->stop();
         m_playbackState = Paused;
         qDebug() << "Playback paused.";
     }
@@ -162,6 +184,7 @@ void AudioEngine::resume()
             stopAllSounds(); // В случае ошибки останавливаем все
             return;
         }
+        m_positionUpdateTimer->start();
         m_playbackState = Playing;
         qDebug() << "Playback resumed.";
     }
@@ -181,9 +204,16 @@ void AudioEngine::stopAllSounds()
 
     if (m_isDeviceInitialized && ma_device_is_started(m_playbackDevice)) {
         ma_device_stop(m_playbackDevice);
+        m_positionUpdateTimer->stop();
+        m_currentPositionMillis.store(0);
         m_playbackState = Stopped;
         qDebug() << "Playback device stopped.";
     }
+}
+
+void AudioEngine::seek(ma_uint64 positionMillis)
+{
+    m_seekRequestMillis.store(positionMillis);
 }
 
 void AudioEngine::setMonitoringVolume(float volume)
@@ -195,6 +225,11 @@ void AudioEngine::setMonitoringVolume(float volume)
 AudioEngine::PlaybackState AudioEngine::getPlaybackState() const
 {
     return m_playbackState;
+}
+
+void AudioEngine::onUpdatePositionTimer()
+{
+    emit positionChanged(m_currentPositionMillis.load());
 }
 
 // Этот слот будет вызван безопасно в главном потоке

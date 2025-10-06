@@ -23,6 +23,7 @@
 #include <QObject>
 #include <QString>
 #include <atomic> // Для атомарных операций
+#include <QTimer>
 #include "miniaudio.h"
 
 class AudioEngine : public QObject
@@ -44,6 +45,7 @@ public:
     void pause();
     void resume();
     void stopAllSounds();
+    void seek(ma_uint64 positionMillis);
     void setMonitoringVolume(float volume);
     PlaybackState getPlaybackState() const;
 
@@ -55,6 +57,7 @@ signals:
 
 private:
     static void dataCallback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount);
+    void onUpdatePositionTimer();
     void postPlaybackFinished(); // Вспомогательная функция для безопасного вызова сигнала
 
 private:
@@ -64,5 +67,9 @@ private:
 
     float m_monitoringVolume;
     bool m_isDeviceInitialized;
+    QTimer* m_positionUpdateTimer;
     PlaybackState m_playbackState;
+
+    std::atomic<ma_int64> m_seekRequestMillis; // -1, если нет запроса на перемотку
+    std::atomic<ma_uint64> m_currentPositionMillis;
 };

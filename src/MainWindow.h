@@ -66,6 +66,7 @@ private slots:
     void onKeepOnTopToggled(bool checked);
     void onOfflineManualClicked();
     void onPlaybackFinished();
+    void onPositionChanged(ma_uint64 position);
 
 
 protected:

@@ -216,6 +216,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Audio
     connect(m_audioEngine, &AudioEngine::durationReady, m_progressSlider, &QSlider::setMaximum);
+    connect(m_audioEngine, &AudioEngine::positionChanged, this, &MainWindow::onPositionChanged);
     connect(m_audioEngine, &AudioEngine::playbackFinished, this, &MainWindow::onPlaybackFinished);
 
     // Панель инструментов
@@ -452,11 +453,17 @@ void MainWindow::onStopClicked()
     qDebug() << "Stop command sent to audio engine.";
 }
 
+void MainWindow::onPositionChanged(ma_uint64 position)
+{
+    // Блокируем сигналы, чтобы избежать рекурсивного вызова onProgressSliderMoved
+    m_progressSlider->blockSignals(true);
+    m_progressSlider->setValue(position);
+    m_progressSlider->blockSignals(false);
+}
+
 void MainWindow::onProgressSliderMoved(int position)
 {
-    // TODO: Реализовать перемотку в AudioEngine
-    // m_audioEngine->seek(position);
-    qDebug() << "Seek is not implemented yet.";
+    m_audioEngine->seek(position);
 }
 
 void MainWindow::onHeadphonesVolumeChanged(int value)
