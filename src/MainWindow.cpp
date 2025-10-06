@@ -220,10 +220,11 @@ MainWindow::MainWindow(QWidget *parent)
     m_soundTableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     m_soundTableWidget->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
     m_soundTableWidget->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
-    m_soundTableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_soundTableWidget->setEditTriggers(QAbstractItemView::EditKeyPressed); // Разрешаем редактирование по F2
     m_soundTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_soundTableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
-
+    m_soundTableWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+    
     // Строка состояния
     m_headphonesButton->setText("H");
     m_headphonesButton->setCheckable(true);
@@ -287,6 +288,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Таблица
     connect(m_soundTableWidget, &QTableWidget::itemDoubleClicked, this, &MainWindow::onSoundTableDoubleClicked);
+    connect(m_soundTableWidget, &QTableWidget::itemChanged, this, &MainWindow::onSoundItemChanged);
+    connect(m_soundTableWidget, &QTableWidget::customContextMenuRequested, this, &MainWindow::onSoundTableContextMenuRequested);
 
     // --- 6. НАСТРОЙКИ ОКНА ---
     setWindowTitle("OpenSoundDeck v0.1 (dev)");
@@ -452,6 +455,138 @@ void MainWindow::onOpenTriggered()
         qDebug() << "Playlist loaded from" << m_currentPlaylistPath;
 }
 
+void MainWindow::onSoundTableContextMenuRequested(const QPoint &pos)
+{
+    QTableWidgetItem *item = m_soundTableWidget->itemAt(pos);
+    if (!item) {
+        return; // Клик не по треку
+    }
+
+    QMenu contextMenu(this);
+    QAction *renameAction = contextMenu.addAction(tr("Rename"));
+    contextMenu.addSeparator();
+    QAction *moveUpAction = contextMenu.addAction(tr("Move Up"));
+    QAction *moveDownAction = contextMenu.addAction(tr("Move Down"));
+    QAction *duplicateAction = contextMenu.addAction(tr("Duplicate"));
+    contextMenu.addSeparator();
+    QAction *trimAction = contextMenu.addAction(tr("Trim"));
+    trimAction->setEnabled(false); // Пока недоступно
+    contextMenu.addSeparator();
+    QAction *removeAction = contextMenu.addAction(tr("Remove from Playlist"));
+
+    // Отключаем "Вверх", если трек первый
+    if (item->row() == 0) {
+        moveUpAction->setEnabled(false);
+    }
+    // Отключаем "Вниз", если трек последний
+    if (item->row() == m_soundTableWidget->rowCount() - 1) {
+        moveDownAction->setEnabled(false);
+    }
+
+    connect(renameAction, &QAction::triggered, this, &MainWindow::onRenameTrack);
+    connect(removeAction, &QAction::triggered, this, &MainWindow::onRemoveTrack);
+    connect(duplicateAction, &QAction::triggered, this, &MainWindow::onDuplicateTrack);
+    connect(moveUpAction, &QAction::triggered, this, &MainWindow::onMoveTrackUp);
+    connect(moveDownAction, &QAction::triggered, this, &MainWindow::onMoveTrackDown);
+
+    contextMenu.exec(m_soundTableWidget->viewport()->mapToGlobal(pos));
+}
+
+void MainWindow::onRenameTrack()
+{
+    QTableWidgetItem *item = m_soundTableWidget->currentItem();
+    if (item) {
+        // Нас интересует только колонка с тегом
+        QTableWidgetItem* tagItem = m_soundTableWidget->item(item->row(), 1);
+        if (tagItem) {
+            m_soundTableWidget->editItem(tagItem);
+        }
+    }
+}
+
+void MainWindow::onRemoveTrack()
+{
+    int currentRow = m_soundTableWidget->currentRow();
+    if (currentRow >= 0) {
+        m_soundTableWidget->removeRow(currentRow);
+        updateIndexes();
+    }
+}
+
+void MainWindow::onDuplicateTrack()
+{
+    int currentRow = m_soundTableWidget->currentRow();
+    if (currentRow < 0) return;
+
+    QTableWidgetItem *tagItem = m_soundTableWidget->item(currentRow, 1);
+    if (tagItem) {
+        QString filePath = tagItem->data(Qt::UserRole).toString();
+        addSoundFile(filePath);
+    }
+}
+
+void MainWindow::onMoveTrackUp()
+{
+    int currentRow = m_soundTableWidget->currentRow();
+    if (currentRow > 0) {
+        m_soundTableWidget->insertRow(currentRow - 1);
+        for (int col = 0; col < m_soundTableWidget->columnCount(); ++col) {
+            m_soundTableWidget->setItem(currentRow - 1, col, m_soundTableWidget->takeItem(currentRow + 1, col));
+        }
+        m_soundTableWidget->removeRow(currentRow + 1);
+        m_soundTableWidget->setCurrentCell(currentRow - 1, 0);
+        updateIndexes();
+    }
+}
+
+void MainWindow::onMoveTrackDown()
+{
+    int currentRow = m_soundTableWidget->currentRow();
+    if (currentRow < m_soundTableWidget->rowCount() - 1) {
+        m_soundTableWidget->insertRow(currentRow + 2);
+        for (int col = 0; col < m_soundTableWidget->columnCount(); ++col) {
+            m_soundTableWidget->setItem(currentRow + 2, col, m_soundTableWidget->takeItem(currentRow, col));
+        }
+        m_soundTableWidget->removeRow(currentRow);
+        m_soundTableWidget->setCurrentCell(currentRow + 1, 0);
+        updateIndexes();
+    }
+}
+
+void MainWindow::onSoundItemChanged(QTableWidgetItem *item)
+{
+    // Убедимся, что изменилась именно ячейка с тегом (именем)
+    if (item->column() != 1) {
+        return;
+    }
+
+    QString oldFilePath = item->data(Qt::UserRole).toString();
+    QFileInfo oldFileInfo(oldFilePath);
+
+    QString newFileName = item->text();
+    // Если пользователь не добавил расширение, сохраняем старое
+    if (!newFileName.endsWith("." + oldFileInfo.suffix())) {
+        newFileName += "." + oldFileInfo.suffix();
+    }
+
+    QString newFilePath = oldFileInfo.absolutePath() + "/" + newFileName;
+
+    if (oldFilePath == newFilePath) {
+        return; // Имя не изменилось
+    }
+
+    QFile file(oldFilePath);
+    if (file.rename(newFilePath)) {
+        // Успешно переименовали файл, теперь обновим путь в данных ячейки
+        item->setData(Qt::UserRole, newFilePath);
+        qDebug() << "Renamed" << oldFilePath << "to" << newFilePath;
+    } else {
+        // Ошибка переименования, вернем старое имя в ячейку
+        qWarning() << "Failed to rename" << oldFilePath << "to" << newFilePath;
+        QMessageBox::warning(this, tr("Rename Error"), tr("Could not rename the file on disk."));
+        item->setText(oldFileInfo.fileName()); // Откат имени в таблице
+    }
+}
 void MainWindow::onImportTriggered()
 {
     const QString libraryPath = getLibraryPath();

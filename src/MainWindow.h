@@ -58,6 +58,13 @@ private slots:
     void onOpenTriggered();
     void onImportTriggered();
     void onSoundTableDoubleClicked(QTableWidgetItem *item);
+    void onSoundItemChanged(QTableWidgetItem *item);
+    void onSoundTableContextMenuRequested(const QPoint &pos);
+    void onRenameTrack();
+    void onRemoveTrack();
+    void onDuplicateTrack();
+    void onMoveTrackUp();
+    void onMoveTrackDown();
     void onSaveTriggered();
     void onSaveAsTriggered();
     void onSettingsClicked();
