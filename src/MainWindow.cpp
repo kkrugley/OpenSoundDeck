@@ -119,8 +119,10 @@ MainWindow::MainWindow(QWidget *parent)
     // Панель инструментов
     m_playbackToolBar = new QToolBar(tr("Playback"), this);
     m_progressSlider = new QSlider(Qt::Horizontal, this);
-    m_headphonesVolumeSlider = new QSlider(Qt::Vertical, this);
-    m_micVolumeSlider = new QSlider(Qt::Vertical, this);
+    m_headphonesVolumeSlider = new QSlider(Qt::Horizontal, this);
+    m_micVolumeSlider = new QSlider(Qt::Horizontal, this);
+    m_headphonesMuteButton = new QToolButton(this);
+    m_micMuteButton = new QToolButton(this);
 
     // Центральная область
     m_soundTableWidget = new QTableWidget();
@@ -170,14 +172,37 @@ MainWindow::MainWindow(QWidget *parent)
     m_playbackToolBar->addAction(m_pauseAction);
     m_playbackToolBar->addAction(m_stopAction);
     m_playbackToolBar->addWidget(m_progressSlider);
+    m_progressSlider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
     QWidget* spacer = new QWidget();
-    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    spacer->setFixedWidth(20); // Добавляем небольшой отступ в 20 пикселей
     m_playbackToolBar->addWidget(spacer);
-    m_headphonesVolumeSlider->setMaximumHeight(40);
-    m_micVolumeSlider->setMaximumHeight(40);
+
+    // --- Громкость наушников ---
+    m_headphonesMuteButton->setCheckable(true);
+    m_headphonesMuteButton->setChecked(false);
+    m_headphonesVolumeSlider->setRange(0, 100);
+    m_headphonesVolumeSlider->setValue(80);
+    m_headphonesVolumeSlider->setFixedWidth(120);
+    updateHeadphonesVolumeIcon(m_headphonesVolumeSlider->value());
+
+    // --- Громкость микрофона ---
+    m_micMuteButton->setCheckable(true);
+    m_micMuteButton->setChecked(false);
+    m_micVolumeSlider->setRange(0, 100);
+    m_micVolumeSlider->setValue(80);
+    m_micVolumeSlider->setFixedWidth(120);
+    updateMicVolumeIcon(m_micVolumeSlider->value());
+
+    // Добавляем виджеты на панель инструментов
+    m_playbackToolBar->addWidget(m_headphonesMuteButton);
     m_playbackToolBar->addWidget(m_headphonesVolumeSlider);
+    m_playbackToolBar->addWidget(m_micMuteButton);
     m_playbackToolBar->addWidget(m_micVolumeSlider);
+
     addToolBar(m_playbackToolBar);
+    m_headphonesVolume = m_headphonesVolumeSlider->value(); // Сохраняем начальное значение
+    m_micVolume = m_micVolumeSlider->value();
 
     // Центральный виджет
     QWidget *centralWidget = new QWidget(this);
@@ -251,7 +276,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_prevAction, &QAction::triggered, this, &MainWindow::onPrevClicked);
     connect(m_progressSlider, &QSlider::sliderMoved, this, &MainWindow::onProgressSliderMoved);
     connect(m_headphonesVolumeSlider, &QSlider::valueChanged, this, &MainWindow::onHeadphonesVolumeChanged);
+    connect(m_headphonesMuteButton, &QToolButton::clicked, this, &MainWindow::onHeadphonesMuteClicked);
     connect(m_micVolumeSlider, &QSlider::valueChanged, this, &MainWindow::onMicVolumeChanged);
+    connect(m_micMuteButton, &QToolButton::clicked, this, &MainWindow::onMicMuteClicked);
 
     // Строка состояния
     connect(m_headphonesButton, &QToolButton::toggled, this, &MainWindow::onHeadphonesToggle);
@@ -621,14 +648,65 @@ void MainWindow::onProgressSliderMoved(int position)
 void MainWindow::onHeadphonesVolumeChanged(int value)
 {
     // Конвертируем значение слайдера (0-99) в громкость (0.0-1.0)
-    float volume = static_cast<float>(value) / 99.0f;
+    float volume = static_cast<float>(value) / 100.0f;
     m_audioEngine->setMonitoringVolume(volume);
+    updateHeadphonesVolumeIcon(value);
+
+    // Если звук не выключен, сохраняем текущее значение
+    if (value > 0) {
+        m_headphonesVolume = value;
+    }
 }
 
 void MainWindow::onMicVolumeChanged(int value)
 {
     // TODO: Реализовать громкость для микса в AudioEngine
     qDebug() << "Mic volume changed to:" << value;
+    updateMicVolumeIcon(value);
+
+    if (value > 0) {
+        m_micVolume = value;
+    }
+}
+
+void MainWindow::onHeadphonesMuteClicked(bool checked)
+{
+    if (checked) { // Mute
+        m_headphonesVolumeSlider->setValue(0);
+    } else { // Unmute
+        m_headphonesVolumeSlider->setValue(m_headphonesVolume);
+    }
+}
+
+void MainWindow::onMicMuteClicked(bool checked)
+{
+    if (checked) { // Mute
+        m_micVolumeSlider->setValue(0);
+    } else { // Unmute
+        m_micVolumeSlider->setValue(m_micVolume);
+    }
+}
+
+void MainWindow::updateHeadphonesVolumeIcon(int value)
+{
+    if (value == 0) {
+        m_headphonesMuteButton->setIcon(QIcon(":/icons/headphones-off.png"));
+        m_headphonesMuteButton->setChecked(true);
+    } else {
+        m_headphonesMuteButton->setIcon(QIcon(":/icons/headphones.png"));
+        m_headphonesMuteButton->setChecked(false);
+    }
+}
+
+void MainWindow::updateMicVolumeIcon(int value)
+{
+    if (value == 0) {
+        m_micMuteButton->setIcon(QIcon(":/icons/microphone-off.png"));
+        m_micMuteButton->setChecked(true);
+    } else {
+        m_micMuteButton->setIcon(QIcon(":/icons/microphone.png"));
+        m_micMuteButton->setChecked(false);
+    }
 }
 
 void MainWindow::onHeadphonesToggle(bool checked) { qDebug() << "Headphones output" << (checked ? "ENABLED" : "DISABLED"); }

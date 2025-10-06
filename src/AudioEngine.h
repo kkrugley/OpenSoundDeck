@@ -65,7 +65,7 @@ private:
     ma_device* m_playbackDevice;
     std::atomic<ma_decoder*> m_pDecoder; // Атомарный указатель на декодер
 
-    float m_monitoringVolume;
+    std::atomic<float> m_monitoringVolume;
     bool m_isDeviceInitialized;
     QTimer* m_positionUpdateTimer;
     PlaybackState m_playbackState;

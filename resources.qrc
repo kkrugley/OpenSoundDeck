@@ -1,5 +1,9 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource prefix="/">
     <file alias="icons/app-icon.png">icons/app-icon.png</file>
+    <file alias="icons/headphones.png">icons/headphones.png</file>
+    <file alias="icons/headphones-off.png">icons/headphones-off.png</file>
+    <file alias="icons/microphone.png">icons/microphone.png</file>
+    <file alias="icons/microphone-off.png">icons/microphone-off.png</file>
 </qresource>
 </RCC>

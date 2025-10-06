@@ -70,6 +70,8 @@ private slots:
     void onAllToggle(bool checked);
     void onRepeatToggle(bool checked);
     void onDurationChanged(qint64 duration);
+    void onHeadphonesMuteClicked(bool checked);
+    void onMicMuteClicked(bool checked);
     void onAboutClicked();
     void onKeepOnTopToggled(bool checked);
     void onOfflineManualClicked();
@@ -89,6 +91,8 @@ private:
     void updatePlaybackButtons(bool isPlaying);
     void savePlaylist(const QString& fileName);
     QString getLibraryPath() const;
+    void updateHeadphonesVolumeIcon(int value);
+    void updateMicVolumeIcon(int value);
     bool m_isRepeatEnabled;
 
     // System Menu
@@ -133,7 +137,9 @@ private:
     QAction *m_stopAction;
     QSlider *m_progressSlider;
     QSlider *m_headphonesVolumeSlider;
+    QToolButton *m_headphonesMuteButton;
     QSlider *m_micVolumeSlider;
+    QToolButton *m_micMuteButton;
     //
 
     // Bottom status bar
@@ -154,4 +160,8 @@ private:
 
     // Playlist
     QString m_currentPlaylistPath;
+
+    // Volume state
+    int m_headphonesVolume;
+    int m_micVolume;
 };

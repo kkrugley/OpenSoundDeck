@@ -52,7 +52,13 @@ void AudioEngine::dataCallback(ma_device* pDevice, void* pOutput, const void* pI
 
     // 2. Чтение данных
     ma_uint64 framesRead = 0;
-    ma_decoder_read_pcm_frames(pDecoder, pOutput, frameCount, &framesRead);
+    ma_result result = ma_decoder_read_pcm_frames(pDecoder, pOutput, frameCount, &framesRead);
+
+    // 3. Применение громкости
+    if (result == MA_SUCCESS && framesRead > 0) {
+        // Умножаем каждый семпл на значение громкости
+        ma_apply_volume_factor_pcm_frames_f32((float*)pOutput, framesRead, pDecoder->outputChannels, engine->m_monitoringVolume.load());
+    }
 
     // 3. Обновление текущей позиции
     ma_uint64 positionIncrement = (framesRead * 1000) / pDecoder->outputSampleRate;
@@ -69,7 +75,7 @@ AudioEngine::AudioEngine(QObject *parent)
       m_context(new ma_context),
       m_playbackDevice(new ma_device),
       m_pDecoder(nullptr), // Инициализируем атомарный указатель как nullptr
-      m_monitoringVolume(1.0f),
+      m_monitoringVolume(0.8f), // Начальная громкость 80%
       m_isDeviceInitialized(false),      
       m_playbackState(Stopped),
       m_seekRequestMillis(-1),
@@ -218,8 +224,9 @@ void AudioEngine::seek(ma_uint64 positionMillis)
 
 void AudioEngine::setMonitoringVolume(float volume)
 {
-    m_monitoringVolume = std::max(0.0f, std::min(1.0f, volume));
-    qDebug() << "Monitoring volume set to" << m_monitoringVolume;
+    float clampedVolume = std::max(0.0f, std::min(1.0f, volume));
+    m_monitoringVolume.store(clampedVolume);
+    qDebug() << "Monitoring volume set to" << clampedVolume;
 }
 
 AudioEngine::PlaybackState AudioEngine::getPlaybackState() const
