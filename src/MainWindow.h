@@ -59,7 +59,8 @@ private slots:
     void onAllToggle(bool checked);
     void onRepeatToggle(bool checked);
     void onDurationChanged(qint64 duration);
-    void onInfoClicked();
+    void onAboutClicked();
+    void onOfflineManualClicked();
     void onPlaybackFinished();
 
 
@@ -91,6 +92,15 @@ private:
     QAction *m_cutAction;
     QAction *m_copyAction;
     QAction *m_pasteAction;
+
+    // Play Actions
+    QAction *m_nextAction;
+    QAction *m_prevAction;
+
+    // Window Actions
+    QAction *m_minimizeAction;
+    QAction *m_fullscreenAction;
+
     //
 
     QTableWidget *m_soundTableWidget;
@@ -114,7 +124,8 @@ private:
     // 
     
     // Help Actions
-    QAction *m_infoAction;
+    QAction *m_aboutAction;
+    QAction *m_offlineManualAction;
     QAction *m_aboutQtAction;
 
     QMediaPlayer *m_metaDataReader;

@@ -69,13 +69,22 @@ MainWindow::MainWindow(QWidget *parent)
     m_pasteAction = new QAction(tr("&Paste"), this);
 
     // Меню Help
-    m_infoAction = new QAction(tr("&Info"), this);
+    m_aboutAction = new QAction(tr("&About"), this);
+    m_offlineManualAction = new QAction(tr("Offline &Manual"), this);
+    m_aboutQtAction = new QAction(tr("About &Qt"), this);
 
 
     // Панель инструментов (Playback)
     m_playAction = new QAction(style()->standardIcon(QStyle::SP_MediaPlay), tr("Play"), this);
     m_pauseAction = new QAction(style()->standardIcon(QStyle::SP_MediaPause), tr("Pause"), this);
     m_stopAction = new QAction(style()->standardIcon(QStyle::SP_MediaStop), tr("Stop"), this);
+    m_nextAction = new QAction(style()->standardIcon(QStyle::SP_MediaSkipForward), tr("Next"), this);
+    m_prevAction = new QAction(style()->standardIcon(QStyle::SP_MediaSkipBackward), tr("Previous"), this);
+
+    // Меню Window
+    m_minimizeAction = new QAction(tr("Mi&nimize"), this);
+    m_fullscreenAction = new QAction(tr("Toggle &Fullscreen"), this);
+    m_fullscreenAction->setCheckable(true);
 
     // Устанавливаем начальное состояние кнопок
     m_playAction->setEnabled(true);
@@ -118,7 +127,20 @@ MainWindow::MainWindow(QWidget *parent)
     m_editMenu->addAction(m_copyAction);
     m_editMenu->addAction(m_pasteAction);
 
-    m_helpMenu->addAction(m_infoAction);
+    m_playMenu->addAction(m_playAction);
+    m_playMenu->addAction(m_pauseAction);
+    m_playMenu->addAction(m_stopAction);
+    m_playMenu->addSeparator();
+    m_playMenu->addAction(m_prevAction);
+    m_playMenu->addAction(m_nextAction);
+
+    m_windowMenu->addAction(m_minimizeAction);
+    m_windowMenu->addAction(m_fullscreenAction);
+
+    m_helpMenu->addAction(m_aboutAction);
+    m_helpMenu->addAction(m_offlineManualAction);
+    m_helpMenu->addSeparator();
+    m_helpMenu->addAction(m_aboutQtAction);
     
     // Панель инструментов
     m_playbackToolBar->addAction(m_playAction);
@@ -177,7 +199,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Меню
     connect(m_exitAction, &QAction::triggered, this, &MainWindow::onExitTriggered);
-    connect(m_infoAction, &QAction::triggered, this, &MainWindow::onInfoClicked);
+    connect(m_aboutAction, &QAction::triggered, this, &MainWindow::onAboutClicked);
+    connect(m_offlineManualAction, &QAction::triggered, this, &MainWindow::onOfflineManualClicked);
+    connect(m_aboutQtAction, &QAction::triggered, qApp, &QApplication::aboutQt);
+
+    // Меню Window
+    connect(m_minimizeAction, &QAction::triggered, this, &MainWindow::showMinimized);
+    connect(m_fullscreenAction, &QAction::toggled, this, [this](bool checked){ checked ? showFullScreen() : showNormal(); });
 
     // Audio
     connect(m_audioEngine, &AudioEngine::durationReady, m_progressSlider, &QSlider::setMaximum);
@@ -198,6 +226,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // --- 6. НАСТРОЙКИ ОКНА ---
     setWindowTitle("OpenSoundDeck v0.1 (dev)");
+    setWindowIcon(QIcon(":/icons/app-icon.png"));
     resize(800, 600);
     setMinimumSize(500, 400);
 }
@@ -286,14 +315,27 @@ void MainWindow::onExitTriggered()
     qApp->quit();
 }
 
-void MainWindow::onInfoClicked()
+void MainWindow::onAboutClicked()
 {
-    QMessageBox::about(this, tr("About OpenSoundDeck"),
-        tr("<h2>OpenSoundDeck 0.1 (dev)</h2>"
-           "<p>Copyright &copy; 2025 Pavel Kruhlei</p>"
-           "<p>This is a simple sound deck application for playing audio files.</p>"
-           "<p>This program is distributed under the terms of the GNU GPLv3.</p>"
-           "<p>Built with Qt and miniaudio.</p>"));
+    QMessageBox aboutBox(this);
+    aboutBox.setWindowTitle(tr("About OpenSoundDeck"));
+    aboutBox.setIconPixmap(QPixmap(":/icons/app-icon.png").scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    aboutBox.setTextFormat(Qt::RichText);
+    aboutBox.setText("<b>OpenSoundDeck</b>");
+    aboutBox.setInformativeText(
+        tr("Version 0.1 (dev)<br><br>"
+           "Your cross-platform, open-source soundboard for voice chats and streams.<br><br>"
+           "Copyright &copy; 2025 Pavel Kruhlei & Contributors<br>"
+           "Licensed under the GNU General Public License v3.0<br><br>"
+           "<a href='https://github.com/kkrugley/OpenSoundDeck'>Visit on GitHub</a>")
+    );
+    aboutBox.setStandardButtons(QMessageBox::Ok);
+    aboutBox.exec();
+}
+
+void MainWindow::onOfflineManualClicked()
+{
+    QMessageBox::information(this, tr("Offline Manual"), tr("This feature is not implemented yet."));
 }
 
 void MainWindow::onPlayClicked()

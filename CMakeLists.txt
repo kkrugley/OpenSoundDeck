@@ -30,11 +30,18 @@ endif()
 
 # Добавляем наш исполняемый файл "OpenSoundDeck"
 # Он будет собран из исходников, перечисленных ниже
-add_executable(OpenSoundDeck
+set(APP_SOURCES
     src/main.cpp
     src/MainWindow.cpp
     src/AudioEngine.cpp
+    resources.qrc
 )
+
+if(WIN32)
+    add_executable(OpenSoundDeck WIN32 ${APP_SOURCES} app.rc)
+else()
+    add_executable(OpenSoundDeck ${APP_SOURCES})
+endif()
 
 # Присоединяем (линкуем) библиотеки Qt к нашему проекту
 # Это сообщает компилятору, какие модули Qt использовать
@@ -50,5 +57,13 @@ if (UNIX AND NOT APPLE)
         ${ALSA_LIBRARIES}
         ${LIBPULSE_LIBRARIES}
         pthread
+    )
+endif()
+
+if(APPLE)
+    set_target_properties(OpenSoundDeck PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_ICON_FILE icons/app.icns
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist"
     )
 endif()
