@@ -1,87 +1,111 @@
 # CMakeLists.txt
 
-# Минимальная требуемая версия CMake
 cmake_minimum_required(VERSION 3.16)
 
-# Название проекта, язык и стандарт C++
+# ============================================
+# Project
+# ============================================
 project(OpenSoundDeck VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # ============================================
-# Qt6 Detection
+# Qt6 Detection Priority:
+# 1. -DCMAKE_PREFIX_PATH=... (highest priority, user explicit)
+# 2. -DQt6_DIR=... (explicit Qt6 directory)
+# 3. Environment variable Qt6_DIR
+# 4. Environment variable QT_DIR
+# 5. Auto-search in common install locations
 # ============================================
-# Priority (highest to lowest):
-# 1. Qt6_DIR CMake variable (set via -DQt6_DIR=... or env var)
-# 2. CMAKE_PREFIX_PATH (set via -DCMAKE_PREFIX_PATH=...)
-# 3. QT_DIR environment variable
-# 4. Qt6_DIR environment variable
-# 5. Automatic search in common install locations
 
-# Check environment variables first (lowest priority, so set early)
-if(NOT Qt6_DIR AND DEFINED ENV{Qt6_DIR})
-    set(Qt6_DIR "$ENV{Qt6_DIR}")
-    message(STATUS "Using Qt6_DIR from environment variable: ${Qt6_DIR}")
-endif()
+# Only do auto-detection if CMAKE_PREFIX_PATH is not provided
+if(NOT DEFINED CMAKE_PREFIX_PATH OR CMAKE_PREFIX_PATH STREQUAL "")
+    message(STATUS "CMAKE_PREFIX_PATH not set, attempting auto-detection...")
 
-if(NOT Qt6_DIR AND DEFINED ENV{QT_DIR})
-    set(Qt6_DIR "$ENV{QT_DIR}/lib/cmake/Qt6")
-    message(STATUS "Using QT_DIR from environment variable: ${Qt6_DIR}")
-endif()
+    # Check if Qt6_DIR is already provided via command line
+    if(NOT DEFINED Qt6_DIR OR Qt6_DIR STREQUAL "")
+        # Try environment variables
+        if(DEFINED ENV{Qt6_DIR})
+            set(CMAKE_PREFIX_PATH "$ENV{Qt6_DIR}")
+            message(STATUS "Using Qt6_DIR from environment: ${CMAKE_PREFIX_PATH}")
+        elseif(DEFINED ENV{QT_DIR})
+            set(CMAKE_PREFIX_PATH "$ENV{QT_DIR}")
+            message(STATUS "Using QT_DIR from environment: ${CMAKE_PREFIX_PATH}")
+        else()
+            # Auto-search in common locations
+            set(QT_SEARCH_PREFIXES
+                "C:/Qt"
+                "D:/Qt"
+                "E:/Qt"
+            )
 
-# If still not found, try automatic detection in common locations
-if(NOT Qt6_DIR)
-    # Common Qt installation paths on Windows
-    set(QT_SEARCH_PATHS
-        "C:/Qt/6.8.0/msvc2022_64/lib/cmake/Qt6"
-        "C:/Qt/6.8.0/msvc2019_64/lib/cmake/Qt6"
-        "C:/Qt/6.7.0/msvc2022_64/lib/cmake/Qt6"
-        "C:/Qt/6.7.0/msvc2019_64/lib/cmake/Qt6"
-        "C:/Qt/6.6.0/msvc2022_64/lib/cmake/Qt6"
-        "C:/Qt/6.6.0/msvc2019_64/lib/cmake/Qt6"
-        "C:/Qt/6.5.0/msvc2022_64/lib/cmake/Qt6"
-        "C:/Qt/6.5.0/msvc2019_64/lib/cmake/Qt6"
-        "D:/Qt/6.8.0/msvc2022_64/lib/cmake/Qt6"
-        "D:/Qt/6.8.0/msvc2019_64/lib/cmake/Qt6"
-        "D:/Qt/6.7.0/msvc2022_64/lib/cmake/Qt6"
-        "D:/Qt/6.7.0/msvc2019_64/lib/cmake/Qt6"
-    )
+            set(QT_SEARCH_VERSIONS
+                "6.11.0" "6.11.1" "6.11.2"
+                "6.10.0" "6.10.1" "6.10.2"
+                "6.9.0" "6.9.1" "6.9.2"
+                "6.8.0" "6.8.1" "6.8.2"
+                "6.7.0" "6.7.1" "6.7.2" "6.7.3"
+                "6.6.0" "6.6.1" "6.6.2" "6.6.3"
+                "6.5.0" "6.5.1" "6.5.2" "6.5.3"
+            )
 
-    foreach(QT_PATH ${QT_SEARCH_PATHS})
-        if(EXISTS "${QT_PATH}/Qt6Config.cmake")
-            set(Qt6_DIR "${QT_PATH}")
-            message(STATUS "Found Qt6 at: ${Qt6_DIR}")
-            break()
+            set(QT_SEARCH_COMPILERS
+                "msvc2022_64"
+                "msvc2019_64"
+                "msvc2022"
+                "msvc2019"
+            )
+
+            foreach(QT_PREFIX ${QT_SEARCH_PREFIXES})
+                foreach(QT_VER ${QT_SEARCH_VERSIONS})
+                    foreach(QT_COMP ${QT_SEARCH_COMPILERS})
+                        set(QT_CANDIDATE "${QT_PREFIX}/${QT_VER}/${QT_COMP}")
+                        if(EXISTS "${QT_CANDIDATE}/lib/cmake/Qt6/Qt6Config.cmake")
+                            set(CMAKE_PREFIX_PATH "${QT_CANDIDATE}")
+                            message(STATUS "Auto-detected Qt6 at: ${CMAKE_PREFIX_PATH}")
+                            break()
+                        endif()
+                    endforeach()
+                    if(DEFINED CMAKE_PREFIX_PATH AND NOT CMAKE_PREFIX_PATH STREQUAL "")
+                        break()
+                    endif()
+                endforeach()
+                if(DEFINED CMAKE_PREFIX_PATH AND NOT CMAKE_PREFIX_PATH STREQUAL "")
+                    break()
+                endif()
+            endforeach()
         endif()
-    endforeach()
+    else()
+        # Qt6_DIR is set, use its parent directory as CMAKE_PREFIX_PATH
+        get_filename_component(Qt6_PREFIX_PATH "${Qt6_DIR}" DIRECTORY)
+        get_filename_component(Qt6_PREFIX_PATH "${Qt6_PREFIX_PATH}" DIRECTORY)
+        set(CMAKE_PREFIX_PATH "${Qt6_PREFIX_PATH}")
+        message(STATUS "Using Qt6_DIR: ${Qt6_DIR}")
+        message(STATUS "Derived CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
+    endif()
+else()
+    message(STATUS "Using CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 endif()
 
 # ============================================
 # Find Qt6
 # ============================================
-# Qt6_DIR can be:
-# - Set via command line: -DQt6_DIR=C:/Qt/6.x.x/msvc2022_64/lib/cmake/Qt6
-# - Set via CMAKE_PREFIX_PATH: -DCMAKE_PREFIX_PATH=C:/Qt/6.x.x/msvc2022_64
-# - Set from environment variables (see above)
-# - Found automatically in common locations
-
+message(STATUS "Searching for Qt6...")
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Multimedia Network Svg)
 
 if(Qt6_FOUND)
-    message(STATUS "Qt6 found: ${Qt6_VERSION}")
-    message(STATUS "Qt6 directory: ${Qt6_DIR}")
+    message(STATUS "Qt6 found successfully!")
+    message(STATUS "  Version: ${Qt6_VERSION}")
+    message(STATUS "  Qt6_DIR: ${Qt6_DIR}")
 endif()
 
 # ============================================
-# Project Configuration
+# Qt Auto-generated files
 # ============================================
-
-# Включаем автоматическую обработку файлов для Qt (MOC, RCC, UIC)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# Для сетевых операций (загрузка драйверов)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories(third_party/miniaudio)
@@ -93,7 +117,6 @@ if (UNIX AND NOT APPLE)
     pkg_check_modules(LIBPULSE REQUIRED libpulse)
     find_package(X11 REQUIRED)
 
-    # Добавляем пути к заголовочным файлам системных библиотек
     include_directories(${ALSA_INCLUDE_DIRS})
     include_directories(${LIBPULSE_INCLUDE_DIRS})
     include_directories(${X11_INCLUDE_DIR})
@@ -157,7 +180,6 @@ if (UNIX AND NOT APPLE)
 endif()
 
 if(APPLE)
-    # macOS frameworks
     find_library(COREAUDIO_LIBRARY CoreAudio)
     find_library(AUDIOTOOLBOX_LIBRARY AudioToolbox)
     find_library(CARBON_LIBRARY Carbon)
@@ -175,10 +197,9 @@ if(APPLE)
     )
 endif()
 
-# Compiler-specific options for better audio performance
+# Compiler options
 if(MSVC)
     target_compile_options(OpenSoundDeck PRIVATE /W4)
-    # Increase stack size for miniaudio (default is 1MB, increase to 8MB)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:8388608")
 else()
     target_compile_options(OpenSoundDeck PRIVATE -Wall -Wextra)
@@ -188,7 +209,6 @@ endif()
 # Windows: Deploy Qt dependencies after build
 # ============================================
 if(WIN32)
-    # Find windeployqt
     find_program(WINDEPLOYQT_EXECUTABLE windeployqt
         HINTS "${Qt6Core_DIR}/../../../bin"
         PATHS "${QT_DIR}/bin"
@@ -199,7 +219,6 @@ if(WIN32)
     if(WINDEPLOYQT_EXECUTABLE)
         message(STATUS "Found windeployqt: ${WINDEPLOYQT_EXECUTABLE}")
 
-        # Add post-build command to copy Qt dependencies
         add_custom_command(TARGET OpenSoundDeck POST_BUILD
             COMMAND "${WINDEPLOYQT_EXECUTABLE}"
             --release
