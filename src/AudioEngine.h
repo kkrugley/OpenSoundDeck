@@ -1,4 +1,4 @@
-// src/AudioEngine.h
+/* src/AudioEngine.h */
 
 /*
  * OpenSoundDeck
@@ -8,23 +8,37 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 
 #include <QObject>
 #include <QString>
-#include <atomic> // Для атомарных операций
+#include <atomic>
 #include <QTimer>
-#include "miniaudio.h"
+#include <QMutex>
+#include <QWaitCondition>
+#include <QThread>
+#include <QQueue>
+#include <QByteArray>
+
+// Miniaudio type definitions (must be before forward declarations)
+// Note: These typedefs must match miniaudio.h definitions
+using ma_uint64 = unsigned long long;
+using ma_uint32 = unsigned int;
+using ma_int64 = long long;
+// ma_result defined in miniaudio.h as typedef int ma_result;
+
+// Forward declaration for miniaudio
+struct ma_context;
+struct ma_device;
+struct ma_device_config;
+struct ma_decoder;
+
+struct AudioFrame {
+    float left;
+    float right;
+};
 
 class AudioEngine : public QObject
 {
@@ -41,35 +55,96 @@ public:
     ~AudioEngine();
 
     bool init();
+
+    // Sound playback
     void playSound(const QString& filePath);
     void pause();
     void resume();
     void stopAllSounds();
     void seek(ma_uint64 positionMillis);
-    void setMonitoringVolume(float volume);
+
+    // Volume controls (0.0 to 1.0)
+    void setMicVolume(float volume);
+    void setFileVolume(float volume);
+    void setMonitorVolume(float volume); // For headphone monitoring
+
+    // Getters
     PlaybackState getPlaybackState() const;
+    float getMicVolume() const { return m_micVolume.load(); }
+    float getFileVolume() const { return m_fileVolume.load(); }
+    float getMonitorVolume() const { return m_monitorVolume.load(); }
 
 signals:
-    // Сигналы для обратной связи с UI
     void positionChanged(ma_uint64 positionMillis);
     void durationReady(ma_uint64 durationMillis);
     void playbackFinished();
+    void error(const QString& message);
 
-private:
-    static void dataCallback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount);
+private slots:
     void onUpdatePositionTimer();
-    void postPlaybackFinished(); // Вспомогательная функция для безопасного вызова сигнала
+    void postPlaybackFinished();
 
 private:
+    // Miniaudio context
     ma_context* m_context;
+
+    // Three devices:
+    // 1. Microphone input capture
+    // 2. File playback output (to virtual mic)
+    // 3. Monitor output (to headphones - optional)
+    ma_device* m_micDevice;
     ma_device* m_playbackDevice;
-    std::atomic<ma_decoder*> m_pDecoder; // Атомарный указатель на декодер
+    ma_device* m_monitorDevice;
 
-    std::atomic<float> m_monitoringVolume;
-    bool m_isDeviceInitialized;
+    // Decoder for playing file
+    std::atomic<ma_decoder*> m_pDecoder;
+
+    // Ring buffer for microphone data
+    // Thread-safe circular buffer for audio frames
+    struct RingBuffer {
+        std::vector<float> data;
+        std::atomic<size_t> writePos{0};
+        std::atomic<size_t> readPos{0};
+        size_t capacity;
+        QMutex mutex;
+
+        void init(size_t frames, int channels);
+        bool write(const float* input, size_t frames, int channels);
+        bool read(float* output, size_t frames, int channels);
+        size_t available() const;
+        void clear();
+    };
+    RingBuffer m_micRingBuffer;
+
+    // Audio format
+    int m_sampleRate;
+    int m_channels;
+    int m_format;
+
+    // Volumes
+    std::atomic<float> m_micVolume{1.0f};
+    std::atomic<float> m_fileVolume{0.8f};
+    std::atomic<float> m_monitorVolume{0.8f};
+
+    // State
+    std::atomic<bool> m_isInitialized{false};
+    std::atomic<PlaybackState> m_playbackState{Stopped};
+    std::atomic<ma_uint64> m_seekRequestMillis{static_cast<ma_uint64>(-1)};
+    std::atomic<ma_uint64> m_currentPositionMillis{static_cast<ma_uint64>(0)};
+    std::atomic<ma_uint64> m_durationMillis{static_cast<ma_uint64>(0)};
+
     QTimer* m_positionUpdateTimer;
-    PlaybackState m_playbackState;
 
-    std::atomic<ma_int64> m_seekRequestMillis; // -1, если нет запроса на перемотку
-    std::atomic<ma_uint64> m_currentPositionMillis;
+    // Callbacks
+    static void micDataCallback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount);
+    static void playbackDataCallback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount);
+    static void monitorDataCallback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount);
+
+    // Mixing function
+    void mixAudio(float* output, const float* micData, const float* fileData,
+                  size_t frameCount, float micVol, float fileVol);
+
+    // Platform-specific device selection
+    bool selectVirtualOutputDevice(void* pConfig);
+    bool selectMonitorDevice(void* pConfig);
 };

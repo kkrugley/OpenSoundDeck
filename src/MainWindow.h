@@ -82,16 +82,18 @@ private slots:
     void onHeadphonesMuteClicked(bool checked);
     void onMicMuteClicked(bool checked);
     void onAboutClicked();
-    void onKeepOnTopToggled(bool checked);
-    void onOfflineManualClicked();
-    void onPlaybackFinished();
-    void onPositionChanged(ma_uint64 position);
+void onKeepOnTopToggled(bool checked);
+void onOfflineManualClicked();
+void onPlaybackFinished();
+void onPositionChanged(ma_uint64 position);
+void onAudioError(const QString& message);
 
 
 protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void showEvent(QShowEvent *event) override;
 
 private:
     void updateIndexes();
@@ -102,6 +104,7 @@ private:
     QString getLibraryPath() const;
     void updateHeadphonesVolumeIcon(int value);
     void updateMicVolumeIcon(int value);
+    void checkVirtualAudioSetup();
     bool m_isRepeatEnabled;
 
     // System Menu

@@ -25,24 +25,20 @@
 
 int main(int argc, char *argv[])
 {
-    // --- НАСТРОЙКА ЛОГИРОВАНИЯ ---
-
-    // Устанавливаем правило:
-    // 1. "*.debug=false" - ВЫКЛЮЧАЕМ все отладочные сообщения по умолчанию.
-    // 2. "\n" - разделитель правил.
-    // 3. "default.debug=true" - ВКЛЮЧАЕМ отладочные сообщения только
-    //    для дефолтной категории, которую использует qDebug().
-    QLoggingCategory::setFilterRules("*.debug=false\ndefault.debug=true");
-
-    // Формат вывода оставляем прежним, он удобен.
-    qSetMessagePattern("%{type}: %{message}");
-
-    // --- КОНЕЦ НАСТРОЙКИ ---
-
+    qDebug() << "[1] Starting application...";
+    
     QApplication app(argc, argv);
-
-    MainWindow window;
-    window.show();
-
-    return app.exec();
+    qDebug() << "[2] QApplication created";
+    
+    try {
+        qDebug() << "[3] Creating MainWindow...";
+        MainWindow window;
+        qDebug() << "[4] MainWindow created, showing...";
+        window.show();
+        qDebug() << "[5] Window shown, starting event loop...";
+        return app.exec();
+    } catch (const std::exception& e) {
+        qCritical() << "Fatal error:" << e.what();
+        return 1;
+    }
 }

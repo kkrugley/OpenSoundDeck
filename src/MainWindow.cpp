@@ -23,6 +23,7 @@
 #include "SettingsDialog.h"
 #include "GlobalHotkeyManager.h"
 #include "HotkeyCaptureDialog.h"
+#include "VirtualAudioSetupDialog.h"
 
 #include <QApplication>
 #include <QTableWidget>
@@ -50,15 +51,21 @@
 #include <QMediaPlayer>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
+: QMainWindow(parent)
 {
-    // --- 1. ИНИЦИАЛИЗАЦИЯ СЛУЖЕБНЫХ ОБЪЕКТОВ ---
-    m_audioEngine = new AudioEngine(this);
-    if (!m_audioEngine->init()) {
-        // TODO: Handle audio engine initialization failure more gracefully
-        QMessageBox::critical(this, tr("Fatal Error"), tr("Failed to initialize audio engine. The application will now close."));
-        // В реальном приложении можно было бы запланировать закрытие, но для простоты пока оставим так
-    }
+qDebug() << "[MW 1] MainWindow constructor started";
+
+// --- 1. ИНИЦИАЛИЗАЦИЯ СЛУЖЕБНЫХ ОБЪЕКТОВ ---
+qDebug() << "[MW 2] Creating AudioEngine...";
+m_audioEngine = new AudioEngine(this);
+connect(m_audioEngine, &AudioEngine::error, this, &MainWindow::onAudioError);
+qDebug() << "[MW 3] Initializing AudioEngine...";
+if (!m_audioEngine->init()) {
+    qDebug() << "[MW ERROR] AudioEngine init failed!";
+    QMessageBox::critical(this, tr("Fatal Error"), tr("Failed to initialize audio engine. The application will now close."));
+} else {
+    qDebug() << "[MW 4] AudioEngine initialized OK";
+}
     m_metaDataReader = new QMediaPlayer(this);
     m_hotkeyManager = new GlobalHotkeyManager(this);
     connect(m_hotkeyManager, &GlobalHotkeyManager::hotkeyActivated, this, [this](int row){
@@ -792,10 +799,10 @@ void MainWindow::onProgressSliderMoved(int position)
 
 void MainWindow::onHeadphonesVolumeChanged(int value)
 {
-    // Конвертируем значение слайдера (0-99) в громкость (0.0-1.0)
-    float volume = static_cast<float>(value) / 100.0f;
-    m_audioEngine->setMonitoringVolume(volume);
-    updateHeadphonesVolumeIcon(value);
+// Конвертируем значение слайдера (0-99) в громкость (0.0-1.0)
+float volume = static_cast<float>(value) / 100.0f;
+m_audioEngine->setMonitorVolume(volume);
+updateHeadphonesVolumeIcon(value);
 
     // Если звук не выключен, сохраняем текущее значение
     if (value > 0) {
@@ -805,13 +812,15 @@ void MainWindow::onHeadphonesVolumeChanged(int value)
 
 void MainWindow::onMicVolumeChanged(int value)
 {
-    // TODO: Реализовать громкость для микса в AudioEngine
-    qDebug() << "Mic volume changed to:" << value;
-    updateMicVolumeIcon(value);
+// Устанавливаем громкость микрофона в AudioEngine
+float volume = static_cast<float>(value) / 100.0f;
+m_audioEngine->setMicVolume(volume);
+qDebug() << "Mic volume changed to:" << value;
+updateMicVolumeIcon(value);
 
-    if (value > 0) {
-        m_micVolume = value;
-    }
+if (value > 0) {
+m_micVolume = value;
+}
 }
 
 void MainWindow::onHeadphonesMuteClicked(bool checked)
@@ -915,7 +924,48 @@ void MainWindow::onAssignHotkey()
 
 QString MainWindow::getLibraryPath() const
 {
-    QSettings settings("kkrugley", "OpenSoundDeck");
-    QString defaultPath = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
-    return settings.value("library/path", defaultPath).toString();
+QSettings settings("kkrugley", "OpenSoundDeck");
+QString defaultPath = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
+return settings.value("library/path", defaultPath).toString();
+}
+
+void MainWindow::onAudioError(const QString& message)
+{
+    QMessageBox::warning(this, tr("Audio Error"), message);
+}
+
+void MainWindow::checkVirtualAudioSetup()
+{
+    qDebug() << "[VIRTUAL AUDIO] Checking if required...";
+    // Check virtual audio setup after window is shown
+    if (VirtualAudioSetupDialog::isVirtualAudioRequired()) {
+        qDebug() << "[VIRTUAL AUDIO] Setup required, showing dialog...";
+        QSettings settings;
+        bool setupSkipped = settings.value("virtualAudioSetupSkipped", false).toBool();
+        qDebug() << "[VIRTUAL AUDIO] Skipped from settings:" << setupSkipped;
+
+        if (!setupSkipped) {
+            qDebug() << "[VIRTUAL AUDIO] Creating dialog...";
+            VirtualAudioSetupDialog setupDialog(this);
+            qDebug() << "[VIRTUAL AUDIO] Executing dialog...";
+            if (setupDialog.exec() == QDialog::Rejected) {
+                qWarning() << "Virtual audio setup was skipped. Microphone injection will not work.";
+            }
+            qDebug() << "[VIRTUAL AUDIO] Dialog closed";
+        }
+    } else {
+        qDebug() << "[VIRTUAL AUDIO] Setup NOT required (Linux or already configured)";
+    }
+}
+
+void MainWindow::showEvent(QShowEvent *event)
+{
+    QMainWindow::showEvent(event);
+    // Check virtual audio setup on first show
+    static bool firstShow = true;
+    if (firstShow) {
+        firstShow = false;
+        // Use timer to delay dialog until window is fully shown
+        QTimer::singleShot(100, this, &MainWindow::checkVirtualAudioSetup);
+    }
 }

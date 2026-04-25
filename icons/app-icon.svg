@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 200 200"
+   fill="#60A5FA"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="app-icon.svg"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   inkscape:export-filename="app-icon.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <inkscape:path-effect
+       effect="fillet_chamfer"
+       id="path-effect3"
+       is_visible="true"
+       lpeversion="1"
+       nodesatellites_param="F,0,0,1,0,50.324555,0,1 @ F,0,0,1,0,50.324555,0,1 @ F,0,0,1,0,50.324555,0,1 @ F,0,0,1,0,50.324555,0,1"
+       radius="0"
+       unit="px"
+       method="auto"
+       mode="F"
+       chamfer_steps="1"
+       flexible="false"
+       use_knot_distance="true"
+       apply_no_radius="true"
+       apply_with_radius="true"
+       only_selected="false"
+       hide_knots="false" />
+    <inkscape:path-effect
+       effect="fillet_chamfer"
+       id="path-effect2"
+       is_visible="true"
+       lpeversion="1"
+       nodesatellites_param="F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 | F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1 @ F,0,0,1,0,0,0,1"
+       radius="0"
+       unit="px"
+       method="auto"
+       mode="F"
+       chamfer_steps="1"
+       flexible="false"
+       use_knot_distance="true"
+       apply_no_radius="true"
+       apply_with_radius="true"
+       only_selected="false"
+       hide_knots="false" />
+  </defs>
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="2.8531759"
+     inkscape:cx="113.03194"
+     inkscape:cy="92.00274"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g1"
+     showgrid="false"
+     inkscape:export-bgcolor="#ffffff00" />
+  <rect
+     style="display:none;fill:#1a1a1a;fill-opacity:0.43943;stroke:#e6ffff;stroke-width:0"
+     id="rect1"
+     width="225.03098"
+     height="213.13507"
+     x="-5.9479556"
+     y="-3.9653037"
+     sodipodi:insensitive="true" />
+  <g
+     transform="translate(100 100) scale(0.8252) translate(-100.00 -100.00)"
+     id="g1">
+    <path
+       style="fill:#f9f9f9;fill-opacity:1;stroke:#e6ffff;stroke-width:0"
+       id="rect2"
+       width="179.82652"
+       height="179.82652"
+       x="11.033885"
+       y="10.90458"
+       transform="matrix(1.3157503,0,0,1.3157503,-31.673462,-31.660024)"
+       ry="0"
+       inkscape:path-effect="#path-effect3"
+       sodipodi:type="rect"
+       rx="0"
+       d="m 61.35844,10.90458 h 79.17741 a 50.324555,50.324555 45 0 1 50.32456,50.324555 V 140.40655 A 50.324555,50.324555 135 0 1 140.53585,190.7311 H 61.35844 A 50.324555,50.324555 45 0 1 11.033885,140.40655 V 61.229135 A 50.324555,50.324555 135 0 1 61.35844,10.90458 Z" />
+    <path
+       d="M 100,-1.792 C 154.631,-1.439 199.652,44.532 200.889,100 200.027,155.676 154.424,201.055 100,201.792 v -50.81 C 127.653,150.763 150.323,128.055 150.513,100 150.186,72.021 127.729,49.098 100,49.018 Z m 0,61 C 77.83,59.358 59.708,77.533 59.586,100 59.805,122.413 77.775,140.742 100,140.792 v 61 C 45.369,201.439 0.348,155.468 -0.889,100 -0.027,44.324 45.576,-1.055 100,-1.792 Z"
+       fill="#60a5fa"
+       id="path1"
+       inkscape:path-effect="#path-effect2"
+       inkscape:original-d="M 100,-1.792 C 154.631,-1.439 199.652,44.532 200.889,100 200.027,155.676 154.424,201.055 100,201.792 v -50.81 C 127.653,150.763 150.323,128.055 150.513,100 150.186,72.021 127.729,49.098 100,49.018 Z m 0,61 C 77.83,59.358 59.708,77.533 59.586,100 59.805,122.413 77.775,140.742 100,140.792 v 61 C 45.369,201.439 0.348,155.468 -0.889,100 -0.027,44.324 45.576,-1.055 100,-1.792 Z"
+       transform="matrix(1.0857572,0,0,1.0857572,-8.6741461,-8.6607083)" />
+  </g>
+</svg>
