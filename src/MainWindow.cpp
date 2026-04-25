@@ -49,6 +49,9 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QMediaPlayer>
+#include <QTimer>
+#include <QtSvg/QSvgRenderer>
+#include <QPainter>
 
 MainWindow::MainWindow(QWidget *parent)
 : QMainWindow(parent)
@@ -102,12 +105,22 @@ if (!m_audioEngine->init()) {
     m_aboutQtAction = new QAction(tr("About &Qt"), this);
 
 
-    // Панель инструментов (Playback)
-    m_playAction = new QAction(style()->standardIcon(QStyle::SP_MediaPlay), tr("Play"), this);
-    m_pauseAction = new QAction(style()->standardIcon(QStyle::SP_MediaPause), tr("Pause"), this);
-    m_stopAction = new QAction(style()->standardIcon(QStyle::SP_MediaStop), tr("Stop"), this);
-    m_nextAction = new QAction(style()->standardIcon(QStyle::SP_MediaSkipForward), tr("Next"), this);
-    m_prevAction = new QAction(style()->standardIcon(QStyle::SP_MediaSkipBackward), tr("Previous"), this);
+    // Helper lambda to load SVG icons
+    auto loadSvgIcon = [](const QString& path, const QSize& size = QSize(24, 24)) -> QIcon {
+        QSvgRenderer renderer(path);
+        QPixmap pixmap(size);
+        pixmap.fill(Qt::transparent);
+        QPainter painter(&pixmap);
+        renderer.render(&painter);
+        return QIcon(pixmap);
+    };
+
+    // Панель инструментов (Playback) - using Phosphor icons
+    m_playAction = new QAction(loadSvgIcon(":/icons/play.svg"), tr("Play"), this);
+    m_pauseAction = new QAction(loadSvgIcon(":/icons/pause.svg"), tr("Pause"), this);
+    m_stopAction = new QAction(loadSvgIcon(":/icons/stop.svg"), tr("Stop"), this);
+    m_nextAction = new QAction(loadSvgIcon(":/icons/skip-forward.svg"), tr("Next"), this);
+    m_prevAction = new QAction(loadSvgIcon(":/icons/skip-back.svg"), tr("Previous"), this);
 
     // Меню Window
     m_minimizeAction = new QAction(tr("Mi&nimize"), this);
@@ -238,18 +251,26 @@ if (!m_audioEngine->init()) {
     m_soundTableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
     m_soundTableWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     
-    // Строка состояния
-    m_headphonesButton->setText("H");
+    // Строка состояния - using Phosphor icons
+    m_headphonesButton->setIcon(loadSvgIcon(":/icons/headphones.svg", QSize(20, 20)));
     m_headphonesButton->setCheckable(true);
     m_headphonesButton->setChecked(true);
     m_headphonesButton->setToolTip(tr("Output to headphones"));
-    m_allButton->setText("A");
+    m_headphonesButton->setAutoRaise(true);
+    m_headphonesButton->setText("");
+
+    m_allButton->setIcon(loadSvgIcon(":/icons/microphone.svg", QSize(20, 20)));
     m_allButton->setCheckable(true);
     m_allButton->setChecked(true);
     m_allButton->setToolTip(tr("Output to all (mic)"));
-    m_repeatButton->setText(QString::fromUtf8("↻"));
+    m_allButton->setAutoRaise(true);
+    m_allButton->setText("");
+
+    m_repeatButton->setIcon(loadSvgIcon(":/icons/repeat.svg", QSize(20, 20)));
     m_repeatButton->setCheckable(true);
     m_repeatButton->setToolTip(tr("Repeat playback"));
+    m_repeatButton->setAutoRaise(true);
+    m_repeatButton->setText("");
 
     statusBar()->addWidget(m_headphonesButton);
     statusBar()->addWidget(m_allButton);
@@ -843,22 +864,42 @@ void MainWindow::onMicMuteClicked(bool checked)
 
 void MainWindow::updateHeadphonesVolumeIcon(int value)
 {
+    // Helper lambda to load SVG icons
+    auto loadSvgIcon = [](const QString& path, const QSize& size = QSize(20, 20)) -> QIcon {
+        QSvgRenderer renderer(path);
+        QPixmap pixmap(size);
+        pixmap.fill(Qt::transparent);
+        QPainter painter(&pixmap);
+        renderer.render(&painter);
+        return QIcon(pixmap);
+    };
+
     if (value == 0) {
-        m_headphonesMuteButton->setIcon(QIcon(":/icons/headphones-off.png"));
+        m_headphonesMuteButton->setIcon(loadSvgIcon(":/icons/headphones-slash.svg", QSize(20, 20)));
         m_headphonesMuteButton->setChecked(true);
     } else {
-        m_headphonesMuteButton->setIcon(QIcon(":/icons/headphones.png"));
+        m_headphonesMuteButton->setIcon(loadSvgIcon(":/icons/headphones.svg", QSize(20, 20)));
         m_headphonesMuteButton->setChecked(false);
     }
 }
 
 void MainWindow::updateMicVolumeIcon(int value)
 {
+    // Helper lambda to load SVG icons
+    auto loadSvgIcon = [](const QString& path, const QSize& size = QSize(20, 20)) -> QIcon {
+        QSvgRenderer renderer(path);
+        QPixmap pixmap(size);
+        pixmap.fill(Qt::transparent);
+        QPainter painter(&pixmap);
+        renderer.render(&painter);
+        return QIcon(pixmap);
+    };
+
     if (value == 0) {
-        m_micMuteButton->setIcon(QIcon(":/icons/microphone-off.png"));
+        m_micMuteButton->setIcon(loadSvgIcon(":/icons/microphone-slash.svg", QSize(20, 20)));
         m_micMuteButton->setChecked(true);
     } else {
-        m_micMuteButton->setIcon(QIcon(":/icons/microphone.png"));
+        m_micMuteButton->setIcon(loadSvgIcon(":/icons/microphone.svg", QSize(20, 20)));
         m_micMuteButton->setChecked(false);
     }
 }

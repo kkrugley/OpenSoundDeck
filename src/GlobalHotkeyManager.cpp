@@ -189,7 +189,7 @@ void GlobalHotkeyManager::unregisterAll()
     }
 }
 
-bool GlobalHotkeyManager::nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result)
+bool GlobalHotkeyManager::nativeEventFilter(const QByteArray &eventType, void *message, qintptr */*result*/)
 {
 #ifdef Q_OS_WIN
     if (eventType == "windows_generic_MSG") {

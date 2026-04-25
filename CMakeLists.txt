@@ -14,7 +14,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 # Находим библиотеку Qt6 и ее компоненты
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Multimedia Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Multimedia Network Svg)
 
 # Для сетевых операций (загрузка драйверов)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -64,6 +64,7 @@ target_link_libraries(OpenSoundDeck PRIVATE
     Qt6::Widgets
     Qt6::Multimedia
     Qt6::Network
+    Qt6::Svg
 )
 
 # Platform-specific libraries
