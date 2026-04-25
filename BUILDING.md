@@ -118,10 +118,16 @@ mkdir build
 cd build
 
 # Configure with CMake
-# Tip: If Qt is not found, specify path:
-# Windows: -DCMAKE_PREFIX_PATH=C:/Qt/6.x.x/msvc2019_64
+# CMake автоматически ищет Qt6 в типичных местах установки.
+# Если Qt6 не найден, укажите путь вручную:
+#
+# Windows: -DCMAKE_PREFIX_PATH=C:/Qt/6.x.x/msvc2022_64
 # macOS:   -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/qt@6
 # Linux:   -DCMAKE_PREFIX_PATH=/usr/lib/qt6
+#
+# Или через переменную окружения:
+# Windows PowerShell: $env:Qt6_DIR="C:/Qt/6.8.0/msvc2022_64/lib/cmake/Qt6"
+# Windows CMD:        set Qt6_DIR=C:\Qt\6.8.0\msvc2022_64\lib\cmake\Qt6
 
 cmake ..
 

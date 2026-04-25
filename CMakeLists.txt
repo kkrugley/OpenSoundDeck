@@ -8,13 +8,78 @@ project(OpenSoundDeck VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ============================================
+# Qt6 Detection
+# ============================================
+# Priority (highest to lowest):
+# 1. Qt6_DIR CMake variable (set via -DQt6_DIR=... or env var)
+# 2. CMAKE_PREFIX_PATH (set via -DCMAKE_PREFIX_PATH=...)
+# 3. QT_DIR environment variable
+# 4. Qt6_DIR environment variable
+# 5. Automatic search in common install locations
+
+# Check environment variables first (lowest priority, so set early)
+if(NOT Qt6_DIR AND DEFINED ENV{Qt6_DIR})
+    set(Qt6_DIR "$ENV{Qt6_DIR}")
+    message(STATUS "Using Qt6_DIR from environment variable: ${Qt6_DIR}")
+endif()
+
+if(NOT Qt6_DIR AND DEFINED ENV{QT_DIR})
+    set(Qt6_DIR "$ENV{QT_DIR}/lib/cmake/Qt6")
+    message(STATUS "Using QT_DIR from environment variable: ${Qt6_DIR}")
+endif()
+
+# If still not found, try automatic detection in common locations
+if(NOT Qt6_DIR)
+    # Common Qt installation paths on Windows
+    set(QT_SEARCH_PATHS
+        "C:/Qt/6.8.0/msvc2022_64/lib/cmake/Qt6"
+        "C:/Qt/6.8.0/msvc2019_64/lib/cmake/Qt6"
+        "C:/Qt/6.7.0/msvc2022_64/lib/cmake/Qt6"
+        "C:/Qt/6.7.0/msvc2019_64/lib/cmake/Qt6"
+        "C:/Qt/6.6.0/msvc2022_64/lib/cmake/Qt6"
+        "C:/Qt/6.6.0/msvc2019_64/lib/cmake/Qt6"
+        "C:/Qt/6.5.0/msvc2022_64/lib/cmake/Qt6"
+        "C:/Qt/6.5.0/msvc2019_64/lib/cmake/Qt6"
+        "D:/Qt/6.8.0/msvc2022_64/lib/cmake/Qt6"
+        "D:/Qt/6.8.0/msvc2019_64/lib/cmake/Qt6"
+        "D:/Qt/6.7.0/msvc2022_64/lib/cmake/Qt6"
+        "D:/Qt/6.7.0/msvc2019_64/lib/cmake/Qt6"
+    )
+
+    foreach(QT_PATH ${QT_SEARCH_PATHS})
+        if(EXISTS "${QT_PATH}/Qt6Config.cmake")
+            set(Qt6_DIR "${QT_PATH}")
+            message(STATUS "Found Qt6 at: ${Qt6_DIR}")
+            break()
+        endif()
+    endforeach()
+endif()
+
+# ============================================
+# Find Qt6
+# ============================================
+# Qt6_DIR can be:
+# - Set via command line: -DQt6_DIR=C:/Qt/6.x.x/msvc2022_64/lib/cmake/Qt6
+# - Set via CMAKE_PREFIX_PATH: -DCMAKE_PREFIX_PATH=C:/Qt/6.x.x/msvc2022_64
+# - Set from environment variables (see above)
+# - Found automatically in common locations
+
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Multimedia Network Svg)
+
+if(Qt6_FOUND)
+    message(STATUS "Qt6 found: ${Qt6_VERSION}")
+    message(STATUS "Qt6 directory: ${Qt6_DIR}")
+endif()
+
+# ============================================
+# Project Configuration
+# ============================================
+
 # Включаем автоматическую обработку файлов для Qt (MOC, RCC, UIC)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
-
-# Находим библиотеку Qt6 и ее компоненты
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Multimedia Network Svg)
 
 # Для сетевых операций (загрузка драйверов)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -34,8 +99,9 @@ if (UNIX AND NOT APPLE)
     include_directories(${X11_INCLUDE_DIR})
 endif()
 
-# Добавляем наш исполняемый файл "OpenSoundDeck"
-# Он будет собран из исходников, перечисленных ниже
+# ============================================
+# Source Files
+# ============================================
 set(APP_SOURCES
     src/main.cpp
     src/MainWindow.cpp
@@ -48,6 +114,9 @@ set(APP_SOURCES
     resources.qrc
 )
 
+# ============================================
+# Executable
+# ============================================
 if(WIN32)
     add_executable(OpenSoundDeck WIN32 ${APP_SOURCES})
 elseif(APPLE)
@@ -56,8 +125,9 @@ else()
     add_executable(OpenSoundDeck ${APP_SOURCES})
 endif()
 
-# Присоединяем (линкуем) библиотеки Qt к нашему проекту
-# Это сообщает компилятору, какие модули Qt использовать
+# ============================================
+# Link Libraries
+# ============================================
 target_link_libraries(OpenSoundDeck PRIVATE
     Qt6::Core
     Qt6::Gui
@@ -114,26 +184,28 @@ else()
     target_compile_options(OpenSoundDeck PRIVATE -Wall -Wextra)
 endif()
 
+# ============================================
 # Windows: Deploy Qt dependencies after build
+# ============================================
 if(WIN32)
     # Find windeployqt
-    find_program(WINDEPLOYQT_EXECUTABLE windeployqt 
-        HINTS "${Qt6Core_DIR}/../../../bin" 
-        PATHS "${QT_DIR}/bin" 
-        ENV QT_DIR 
+    find_program(WINDEPLOYQT_EXECUTABLE windeployqt
+        HINTS "${Qt6Core_DIR}/../../../bin"
+        PATHS "${QT_DIR}/bin"
+        ENV QT_DIR
         DOC "Path to windeployqt"
     )
-    
+
     if(WINDEPLOYQT_EXECUTABLE)
         message(STATUS "Found windeployqt: ${WINDEPLOYQT_EXECUTABLE}")
-        
+
         # Add post-build command to copy Qt dependencies
         add_custom_command(TARGET OpenSoundDeck POST_BUILD
-            COMMAND "${WINDEPLOYQT_EXECUTABLE}" 
-                --release 
-                --no-compiler-runtime 
-                --no-translations 
-                "$<TARGET_FILE:OpenSoundDeck>"
+            COMMAND "${WINDEPLOYQT_EXECUTABLE}"
+            --release
+            --no-compiler-runtime
+            --no-translations
+            "$<TARGET_FILE:OpenSoundDeck>"
             COMMENT "Deploying Qt dependencies..."
         )
     else()
