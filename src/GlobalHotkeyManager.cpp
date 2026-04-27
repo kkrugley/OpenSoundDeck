@@ -52,7 +52,10 @@ GlobalHotkeyManager::GlobalHotkeyManager(QObject *parent) : QObject(parent)
 GlobalHotkeyManager::~GlobalHotkeyManager()
 {
     unregisterAll();
-    qApp->removeNativeEventFilter(this);
+    // Only remove filter if application still exists
+    if (qApp) {
+        qApp->removeNativeEventFilter(this);
+    }
 }
 
 bool GlobalHotkeyManager::registerHotkey(const QKeySequence& sequence, int trackRow)

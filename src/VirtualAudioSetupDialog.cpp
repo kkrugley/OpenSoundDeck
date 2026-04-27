@@ -19,6 +19,7 @@
 #include <QDesktopServices>
 #include <QSettings>
 #include <QDebug>
+#include <QTextBrowser>
 
 #ifdef Q_OS_WIN
 #include <Windows.h>
@@ -222,28 +223,66 @@ void VirtualAudioSetupDialog::onAlreadyHaveClicked()
 void VirtualAudioSetupDialog::onConfigureClicked()
 {
 #ifdef Q_OS_WIN
-    if (configureWindowsAudio()) {
+    bool success = configureWindowsAudio();
+    if (success) {
         QMessageBox::information(this, tr("Success"),
             tr("Virtual audio configured successfully!\n\n"
                "OpenSoundDeck is now ready to inject audio into your microphone."));
         updateStatus();
         accept();
     } else {
-        QMessageBox::warning(this, tr("Configuration Failed"),
-            tr("Could not automatically configure virtual audio.\n\n"
-               "Please manually set 'CABLE Input' as your default recording device in Windows Sound Settings."));
+        // Create custom message box with additional options
+        QMessageBox msgBox(this);
+        msgBox.setWindowTitle(tr("Configuration Failed"));
+        msgBox.setText(tr("Could not automatically configure virtual audio.\n\n"
+                          "You need to manually set 'CABLE Output' as your default recording device.\n\n"
+                          "Would you like to open Windows Sound Settings?"));
+        msgBox.setIcon(QMessageBox::Warning);
+
+        QPushButton *openSettingsBtn = msgBox.addButton(tr("Open Sound Settings"), QMessageBox::ActionRole);
+        QPushButton *manualGuideBtn = msgBox.addButton(tr("Show Manual Guide"), QMessageBox::HelpRole);
+        QPushButton *closeBtn = msgBox.addButton(QMessageBox::Close);
+
+        msgBox.exec();
+
+        if (msgBox.clickedButton() == openSettingsBtn) {
+            // Open Windows Sound Settings
+            QUrl url("ms-settings:sound"); // Modern Windows Settings
+            if (!QDesktopServices::openUrl(url)) {
+                // Fallback to legacy control panel
+                QProcess::startDetached("control", QStringList() << "mmsys.cpl" << "sounds");
+            }
+        } else if (msgBox.clickedButton() == manualGuideBtn) {
+            showManualConfigurationGuide();
+        }
+        // If Close was clicked, just dismiss the dialog
     }
 #elif defined(Q_OS_MACOS)
-    if (configureMacOSAudio()) {
+    bool success = configureMacOSAudio();
+    if (success) {
         QMessageBox::information(this, tr("Success"),
             tr("Virtual audio configured successfully!\n\n"
                "OpenSoundDeck is now ready to inject audio into your microphone."));
         updateStatus();
         accept();
     } else {
-        QMessageBox::warning(this, tr("Configuration Failed"),
-            tr("Could not automatically configure virtual audio.\n\n"
-               "Please manually set 'BlackHole 2ch' as your default input device in System Preferences > Sound."));
+        QMessageBox msgBox(this);
+        msgBox.setWindowTitle(tr("Configuration Failed"));
+        msgBox.setText(tr("Could not automatically configure virtual audio.\n\n"
+                          "You need to manually configure BlackHole 2ch as your input device."));
+        msgBox.setIcon(QMessageBox::Warning);
+
+        QPushButton *openAudioBtn = msgBox.addButton(tr("Open Audio MIDI Setup"), QMessageBox::ActionRole);
+        QPushButton *manualGuideBtn = msgBox.addButton(tr("Show Manual Guide"), QMessageBox::HelpRole);
+        QPushButton *closeBtn = msgBox.addButton(QMessageBox::Close);
+
+        msgBox.exec();
+
+        if (msgBox.clickedButton() == openAudioBtn) {
+            QProcess::startDetached("open", QStringList() << "/System/Applications/Utilities/Audio MIDI Setup.app");
+        } else if (msgBox.clickedButton() == manualGuideBtn) {
+            showManualConfigurationGuide();
+        }
     }
 #else
     // Linux - should already be configured
@@ -272,9 +311,18 @@ void VirtualAudioSetupDialog::downloadAndInstall()
     QUrl downloadUrl(QStringLiteral("https://vb-audio.com/Cable/"));
     QDesktopServices::openUrl(downloadUrl);
 
-    QMessageBox::information(this, tr("Download VB-Cable"),
-        tr("Please download and install VB-Audio Virtual Cable from the opened webpage.\n\n"
-           "After installation completes, click 'Configure' to set it up automatically."));
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(tr("Download VB-Cable"));
+    msgBox.setText(tr("VB-Audio Virtual Cable download page has been opened in your browser.\n\n"
+                      "Installation steps:\n"
+                      "1. Download VB-Cable (Vbcable_Setup.exe or Vbcable_Setup_x64.exe)\n"
+                      "2. Run the installer as Administrator\n"
+                      "3. Reboot your computer after installation\n"
+                      "4. Return to this dialog and click 'Configure'\n\n"
+                      "After installation, OpenSoundDeck needs to set 'CABLE Output' as your default recording device."));
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.exec();
 
     // Change buttons
     m_installButton->setVisible(false);
@@ -282,13 +330,23 @@ void VirtualAudioSetupDialog::downloadAndInstall()
     m_configureButton->setVisible(true);
 
 #elif defined(Q_OS_MACOS)
-    // For macOS, we can bundle the BlackHole pkg or download it
-    QUrl downloadUrl(QStringLiteral("https://github.com/ExistentialAudio/BlackHole/releases"));
+    // For macOS, open BlackHole releases page
+    QUrl downloadUrl(QStringLiteral("https://github.com/ExistentialAudio/BlackHole/releases/latest"));
     QDesktopServices::openUrl(downloadUrl);
 
-    QMessageBox::information(this, tr("Download BlackHole"),
-        tr("Please download and install BlackHole 2ch from the opened page.\n\n"
-           "After installation completes, click 'Configure' to set it up automatically."));
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(tr("Download BlackHole"));
+    msgBox.setText(tr("BlackHole download page has been opened in your browser.\n\n"
+                      "Installation steps:\n"
+                      "1. Download BlackHole2ch.pkg\n"
+                      "2. Run the installer\n"
+                      "3. Open Audio MIDI Setup and create a Multi-Output Device\n"
+                      "4. Set BlackHole 2ch as the input for the Multi-Output Device\n"
+                      "5. Return to this dialog and click 'Configure'\n\n"
+                      "After installation, OpenSoundDeck needs to configure the audio routing."));
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.exec();
 
     m_installButton->setVisible(false);
     m_alreadyHaveButton->setVisible(false);
@@ -386,24 +444,12 @@ bool VirtualAudioSetupDialog::checkVBCableInstalled()
 
 bool VirtualAudioSetupDialog::configureWindowsAudio()
 {
-    // Set VB-Cable as default recording device
+    // Set VB-Cable as default recording device using multiple methods
     HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     bool needToUninitialize = SUCCEEDED(hr);
 
     if (FAILED(hr) && hr != RPC_E_CHANGED_MODE) {
         qDebug() << "[COM] Failed to initialize:" << hr;
-        return false;
-    }
-
-    // Use PolicyConfig to set default device
-    // Try Windows 7+ interface first, then Vista
-    IPolicyConfig *pPolicyConfig = nullptr;
-    hr = CoCreateInstance(CLSID_CPolicyConfigClient, nullptr, CLSCTX_ALL,
-        IID_IPolicyConfig, reinterpret_cast<void**>(&pPolicyConfig));
-
-    if (FAILED(hr)) {
-        qDebug() << "[COM] Failed to create PolicyConfig:" << hr;
-        if (needToUninitialize) CoUninitialize();
         return false;
     }
 
@@ -414,25 +460,29 @@ bool VirtualAudioSetupDialog::configureWindowsAudio()
 
     if (FAILED(hr)) {
         qDebug() << "[COM] Failed to create MMDeviceEnumerator:" << hr;
-        pPolicyConfig->Release();
         if (needToUninitialize) CoUninitialize();
         return false;
     }
 
     IMMDeviceCollection *pCollection = nullptr;
-    hr = pEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE, &pCollection);
+    hr = pEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATEMASK_ALL, &pCollection);
 
     bool configured = false;
     LPWSTR foundDeviceId = nullptr;
+    QString foundDeviceName;
 
     if (SUCCEEDED(hr) && pCollection) {
         UINT count = 0;
         hr = pCollection->GetCount(&count);
 
         if (SUCCEEDED(hr)) {
-            for (UINT i = 0; i < count && !configured; i++) {
+            for (UINT i = 0; i < count; i++) {
                 IMMDevice *pDevice = nullptr;
                 if (SUCCEEDED(pCollection->Item(i, &pDevice)) && pDevice) {
+                    // Check device state
+                    DWORD state = 0;
+                    HRESULT hrState = pDevice->GetState(&state);
+
                     IPropertyStore *pProps = nullptr;
                     if (SUCCEEDED(pDevice->OpenPropertyStore(STGM_READ, &pProps)) && pProps) {
                         PROPVARIANT varName;
@@ -440,19 +490,22 @@ bool VirtualAudioSetupDialog::configureWindowsAudio()
                         if (SUCCEEDED(pProps->GetValue(PKEY_Device_FriendlyName, &varName))) {
                             if (varName.vt == VT_LPWSTR && varName.pwszVal) {
                                 QString deviceName = QString::fromWCharArray(varName.pwszVal);
-                                qDebug() << "[COM] Checking device:" << deviceName;
-                                if (deviceName.contains(QStringLiteral("CABLE"), Qt::CaseInsensitive) ||
-                                    deviceName.contains(QStringLiteral("VB-Audio"), Qt::CaseInsensitive)) {
+                                qDebug() << "[COM] Found device:" << deviceName << "State:" << state;
+
+                                // Look for CABLE Output (which is the capture endpoint of VB-Cable)
+                                if (deviceName.contains(QStringLiteral("CABLE Output"), Qt::CaseInsensitive) ||
+                                    deviceName.contains(QStringLiteral("CABLE"), Qt::CaseInsensitive)) {
                                     if (SUCCEEDED(pDevice->GetId(&foundDeviceId)) && foundDeviceId) {
-                                        hr = pPolicyConfig->SetDefaultEndpoint(foundDeviceId, eConsole);
-                                        if (SUCCEEDED(hr)) {
-                                            configured = true;
-                                            qDebug() << "[COM] Set default endpoint to:" << deviceName;
-                                        } else {
-                                            qDebug() << "[COM] SetDefaultEndpoint failed:" << hr;
-                                            CoTaskMemFree(foundDeviceId);
-                                            foundDeviceId = nullptr;
+                                        foundDeviceName = deviceName;
+
+                                        // Try to enable device if disabled
+                                        if (state == DEVICE_STATE_DISABLED) {
+                                            qDebug() << "[COM] Device is disabled, attempting to enable...";
+                                            // Note: Enabling requires elevation, can't do it programmatically easily
                                         }
+
+                                        // Device found, break to try configuration
+                                        break;
                                     }
                                 }
                             }
@@ -468,10 +521,43 @@ bool VirtualAudioSetupDialog::configureWindowsAudio()
     }
 
     pEnumerator->Release();
-    pPolicyConfig->Release();
+
+    // If we found the device, try to set it as default
     if (foundDeviceId) {
+        // Try multiple methods to set default device
+
+        // Method 1: PolicyConfig (Windows 7+)
+        IPolicyConfig *pPolicyConfig = nullptr;
+        hr = CoCreateInstance(CLSID_CPolicyConfigClient, nullptr, CLSCTX_ALL,
+            IID_IPolicyConfig, reinterpret_cast<void**>(&pPolicyConfig));
+
+        if (SUCCEEDED(hr) && pPolicyConfig) {
+            // Try eConsole (games, media players)
+            hr = pPolicyConfig->SetDefaultEndpoint(foundDeviceId, eConsole);
+            if (SUCCEEDED(hr)) {
+                qDebug() << "[COM] SetDefaultEndpoint (eConsole) succeeded for:" << foundDeviceName;
+                configured = true;
+            } else {
+                qDebug() << "[COM] SetDefaultEndpoint (eConsole) failed:" << hr;
+            }
+
+            // Also try eCommunication (VoIP, chat apps)
+            hr = pPolicyConfig->SetDefaultEndpoint(foundDeviceId, eCommunications);
+            if (SUCCEEDED(hr)) {
+                qDebug() << "[COM] SetDefaultEndpoint (eCommunications) succeeded for:" << foundDeviceName;
+                configured = true;
+            } else {
+                qDebug() << "[COM] SetDefaultEndpoint (eCommunications) failed:" << hr;
+            }
+
+            pPolicyConfig->Release();
+        } else {
+            qDebug() << "[COM] Failed to create PolicyConfig:" << hr;
+        }
+
         CoTaskMemFree(foundDeviceId);
     }
+
     if (needToUninitialize) CoUninitialize();
 
     qDebug() << "[COM] configureWindowsAudio result:" << configured;
@@ -538,16 +624,111 @@ bool VirtualAudioSetupDialog::setupPulseAudioVirtualSink()
 
     // Create null sink
     process.start(QStringLiteral("pactl"),
-                  QStringList() << QStringLiteral("load-module") << QStringLiteral("module-null-sink")
-                  << QStringLiteral("sink_name=virt_mic") << QStringLiteral("sink_properties=device.description='OpenSoundDeck Virtual Mic'"));
+        QStringList() << QStringLiteral("load-module") << QStringLiteral("module-null-sink")
+                      << QStringLiteral("sink_name=virt_mic") << QStringLiteral("sink_properties=device.description='OpenSoundDeck Virtual Mic'"));
     process.waitForFinished(5000);
 
     // Create source from sink monitor
     process.start(QStringLiteral("pactl"),
-                  QStringList() << QStringLiteral("load-module") << QStringLiteral("module-virtual-source")
-                  << QStringLiteral("source_name=virt_mic") << QStringLiteral("master=virt_mic.monitor"));
+        QStringList() << QStringLiteral("load-module") << QStringLiteral("module-virtual-source")
+                      << QStringLiteral("source_name=virt_mic") << QStringLiteral("master=virt_mic.monitor"));
     process.waitForFinished(5000);
 
     return process.exitCode() == 0;
 }
 #endif
+
+// Helper function to show manual configuration guide
+void VirtualAudioSetupDialog::showManualConfigurationGuide()
+{
+    QDialog guideDialog(this);
+    guideDialog.setWindowTitle(tr("Manual Configuration Guide"));
+    guideDialog.setMinimumSize(600, 500);
+    guideDialog.resize(700, 550);
+
+    QVBoxLayout *layout = new QVBoxLayout(&guideDialog);
+
+    QTextBrowser *textBrowser = new QTextBrowser(&guideDialog);
+    textBrowser->setOpenExternalLinks(true);
+
+#ifdef Q_OS_WIN
+    textBrowser->setHtml(R"(<h2>Windows Manual Configuration Guide</h2>
+
+<h3>Step 1: Install VB-Audio Virtual Cable</h3>
+<ol>
+<li>Visit <a href="https://vb-audio.com/Cable/">https://vb-audio.com/Cable/</a></li>
+<li>Download <b>Vbcable_Setup.exe</b> (or Vbcable_Setup_x64.exe for 64-bit)</li>
+<li>Run the installer <b>as Administrator</b></li>
+<li>Complete the installation and <b>reboot your computer</b></li>
+</ol>
+
+<h3>Step 2: Configure Default Recording Device</h3>
+<ol>
+<li>Right-click the speaker icon in your system tray</li>
+<li>Select <b>Open Sound settings</b> or <b>Sounds</b></li>
+<li>Go to the <b>Recording</b> tab</li>
+<li>Look for <b>CABLE Output</b> (this is the virtual microphone)</li>
+<li>Right-click on it and select <b>Set as Default Device</b></li>
+<li>Also set it as <b>Default Communication Device</b></li>
+<li>Click <b>OK</b> to save</li>
+</ol>
+
+<h3>Step 3: Test in Your Application</h3>
+<p>Now OpenSoundDeck can inject audio into your microphone. Test it in Discord, Zoom, or any other app by selecting the default microphone.</p>
+
+<h3>Troubleshooting</h3>
+<ul>
+<li><b>Can't see CABLE Output?</b> Make sure you rebooted after installation</li>
+<li><b>Audio not working?</b> Check that CABLE Output is set as default in both Windows and your app</li>
+<li><b>VB-Cable not installing?</b> Try running the installer as Administrator</li>
+</ul>)");
+#elif defined(Q_OS_MACOS)
+    textBrowser->setHtml(R"(<h2>macOS Manual Configuration Guide</h2>
+
+<h3>Step 1: Install BlackHole</h3>
+<ol>
+<li>Visit <a href="https://github.com/ExistentialAudio/BlackHole/releases">BlackHole Releases</a></li>
+<li>Download the latest <b>BlackHole2ch.pkg</b></li>
+<li>Run the installer and follow the prompts</li>
+</ol>
+
+<h3>Step 2: Create Multi-Output Device</h3>
+<ol>
+<li>Open <b>Audio MIDI Setup</b> (Applications → Utilities)</li>
+<li>Click the <b>+</b> button and select <b>Create Multi-Output Device</b></li>
+<li>Check <b>BlackHole 2ch</b> and your headphones/speakers</li>
+<li>Check <b>Drift Correction</b> for your physical output</li>
+<li>Right-click the new device and select <b>Use This Device for Sound Output</b></li>
+</ol>
+
+<h3>Step 3: Set Up Input Device</h3>
+<ol>
+<li>Go to <b>System Preferences → Sound → Input</b></li>
+<li>Select <b>BlackHole 2ch</b> as your input device</li>
+<li>Or use Audio MIDI Setup to set BlackHole as the default input</li>
+</ol>
+
+<h3>Troubleshooting</h3>
+<ul>
+<li><b>No audio output?</b> Make sure you selected both BlackHole and your speakers in the Multi-Output Device</li>
+<li><b>Apps can't hear the mic?</b> Ensure BlackHole is set as the default input in System Preferences</li>
+</ul>)");
+#else
+    textBrowser->setHtml(R"(<h2>Linux Configuration</h2>
+<p>OpenSoundDeck will automatically configure PulseAudio/PipeWire. No manual steps required.</p>
+
+<p>If automatic configuration fails, you can manually create a virtual sink:</p>
+<pre>
+pactl load-module module-null-sink sink_name=virt_mic sink_properties=device.description='OpenSoundDeck Virtual Mic'
+pactl load-module module-virtual-source source_name=virt_mic master=virt_mic.monitor
+</pre>)");
+#endif
+
+    layout->addWidget(textBrowser);
+
+    QPushButton *closeBtn = new QPushButton(tr("Close"), &guideDialog);
+    connect(closeBtn, &QPushButton::clicked, &guideDialog, &QDialog::accept);
+    layout->addWidget(closeBtn, 0, Qt::AlignRight);
+
+    guideDialog.exec();
+}

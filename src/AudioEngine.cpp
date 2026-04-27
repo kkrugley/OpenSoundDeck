@@ -1,14 +1,14 @@
 /* src/AudioEngine.cpp */
 
 /*
- * OpenSoundDeck
- * Copyright (C) 2025 Pavel Kruhlei
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- */
+* OpenSoundDeck
+* Copyright (C) 2025 Pavel Kruhlei
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*/
 
 #include "AudioEngine.h"
 #include <QDebug>
@@ -27,7 +27,15 @@
 
 #ifdef Q_OS_MACOS
 #include <CoreAudio/CoreAudio.h>
+#include <AudioToolbox/AudioToolbox.h>
 #endif
+
+AudioEngine* AudioEngine::s_instance = nullptr;
+
+AudioEngine* AudioEngine::instance()
+{
+    return s_instance;
+}
 
 // ============================================================================
 // Ring Buffer Implementation
@@ -128,30 +136,51 @@ AudioEngine::AudioEngine(QObject *parent)
 
     // Initialize ring buffer for microphone data
     m_micRingBuffer.init(48000, 2); // 1 second stereo buffer @ 48kHz
+
+    s_instance = this;
+    enumerateDevices();
 }
 
 AudioEngine::~AudioEngine()
 {
     stopAllSounds();
 
+    // Stop and uninit devices safely
     if (m_isInitialized) {
-        ma_device_uninit(m_micDevice);
-        ma_device_uninit(m_playbackDevice);
-        ma_device_uninit(m_monitorDevice);
+        if (m_micDevice) {
+            ma_device_stop(m_micDevice);
+            ma_device_uninit(m_micDevice);
+        }
+        if (m_playbackDevice) {
+            ma_device_stop(m_playbackDevice);
+            ma_device_uninit(m_playbackDevice);
+        }
+        if (m_monitorDevice) {
+            ma_device_stop(m_monitorDevice);
+            ma_device_uninit(m_monitorDevice);
+        }
     }
-
-    ma_context_uninit(m_context);
-
-    delete m_context;
-    delete m_micDevice;
-    delete m_playbackDevice;
-    delete m_monitorDevice;
 
     // Cleanup decoder
     ma_decoder* pDecoder = m_pDecoder.exchange(nullptr);
     if (pDecoder) {
         ma_decoder_uninit(pDecoder);
         delete pDecoder;
+    }
+
+    // Uninit context last
+    if (m_context) {
+        ma_context_uninit(m_context);
+        delete m_context;
+    }
+
+    // Delete devices
+    delete m_micDevice;
+    delete m_playbackDevice;
+    delete m_monitorDevice;
+
+    if (s_instance == this) {
+        s_instance = nullptr;
     }
 }
 
@@ -190,9 +219,6 @@ bool AudioEngine::init()
     playbackConfig.dataCallback = playbackDataCallback;
     playbackConfig.pUserData = this;
 
-    // Try to select virtual output device (VB-Cable/BlackHole)
-    selectVirtualOutputDevice(&playbackConfig);
-
     if (ma_device_init(m_context, &playbackConfig, m_playbackDevice) != MA_SUCCESS) {
         qCritical() << "Failed to initialize playback device.";
         ma_device_uninit(m_micDevice);
@@ -208,11 +234,8 @@ bool AudioEngine::init()
     monitorConfig.dataCallback = monitorDataCallback;
     monitorConfig.pUserData = this;
 
-    // Try to select default playback device for monitoring
-    if (ma_device_init(m_context, &monitorConfig, m_monitorDevice) == MA_SUCCESS) {
-        // Monitoring device initialized successfully
-    } else {
-        // Monitoring is optional, continue without it
+    // Try to initialize monitor device (headphones)
+    if (ma_device_init(m_context, &monitorConfig, m_monitorDevice) != MA_SUCCESS) {
         qWarning() << "Could not initialize monitor device, continuing without monitoring.";
     }
 
@@ -231,7 +254,9 @@ bool AudioEngine::init()
     }
 
     // Monitor device is optional
-    ma_device_start(m_monitorDevice);
+    if (m_monitorDevice) {
+        ma_device_start(m_monitorDevice);
+    }
 
     m_isInitialized = true;
     qDebug() << "AudioEngine initialized successfully.";
@@ -239,31 +264,136 @@ bool AudioEngine::init()
 }
 
 // ============================================================================
-// Device Selection (Platform-specific)
+// Device Enumeration
 // ============================================================================
 
-bool AudioEngine::selectVirtualOutputDevice(void* pConfig)
+void AudioEngine::enumerateDevices()
 {
-    (void)pConfig;
-    // miniaudio doesn't directly support selecting specific devices via config
-    // on all platforms. The virtual device should be set as default in the OS
-    // for this to work automatically.
+    QMutexLocker locker(&m_deviceListMutex);
 
-    // For now, we rely on the VirtualAudioSetupDialog to set the virtual
-    // device as default. miniaudio will then use it automatically.
+    m_deviceList.inputDevices.clear();
+    m_deviceList.outputDevices.clear();
+    m_deviceList.virtualDevices.clear();
 
-    // Platform-specific selection could be added here in the future
-    // using ma_context_get_devices() and ma_device_init_ex()
+    // Initialize a temporary context for device enumeration
+    ma_context tempContext;
+    ma_context_config contextConfig = ma_context_config_init();
 
-    return true;
+    if (ma_context_init(NULL, 0, &contextConfig, &tempContext) != MA_SUCCESS) {
+        qWarning() << "Failed to initialize temporary context for device enumeration";
+        return;
+    }
+
+    ma_device_info* pPlaybackDevices;
+    ma_device_info* pCaptureDevices;
+    ma_uint32 playbackCount;
+    ma_uint32 captureCount;
+
+    if (ma_context_get_devices(&tempContext, &pPlaybackDevices, &playbackCount,
+                               &pCaptureDevices, &captureCount) != MA_SUCCESS) {
+        qWarning() << "Failed to enumerate devices";
+        ma_context_uninit(&tempContext);
+        return;
+    }
+
+    // Process capture devices (input/microphones)
+    for (ma_uint32 i = 0; i < captureCount; i++) {
+        AudioDeviceInfo dev;
+        // Use name as ID since ma_device_id is a union, not a simple string
+        dev.id = QString::fromUtf8(pCaptureDevices[i].name);
+        dev.name = QString::fromUtf8(pCaptureDevices[i].name);
+        dev.isDefault = pCaptureDevices[i].isDefault != 0;
+        dev.isVirtual = isVirtualDevice(dev.name);
+
+        m_deviceList.inputDevices.append(dev);
+
+        if (dev.isVirtual) {
+            m_deviceList.virtualDevices.append(dev);
+        }
+    }
+
+    // Process playback devices (output/speakers)
+    for (ma_uint32 i = 0; i < playbackCount; i++) {
+        AudioDeviceInfo dev;
+        // Use name as ID since ma_device_id is a union, not a simple string
+        dev.id = QString::fromUtf8(pPlaybackDevices[i].name);
+        dev.name = QString::fromUtf8(pPlaybackDevices[i].name);
+        dev.isDefault = pPlaybackDevices[i].isDefault != 0;
+        dev.isVirtual = isVirtualDevice(dev.name);
+
+        m_deviceList.outputDevices.append(dev);
+
+        if (dev.isVirtual) {
+            // Add to virtual devices if not already there
+            bool found = false;
+            for (const auto& vd : m_deviceList.virtualDevices) {
+                if (vd.id == dev.id) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                m_deviceList.virtualDevices.append(dev);
+            }
+        }
+    }
+
+    ma_context_uninit(&tempContext);
+    qDebug() << "Device enumeration complete:"
+             << m_deviceList.inputDevices.size() << "inputs,"
+             << m_deviceList.outputDevices.size() << "outputs,"
+             << m_deviceList.virtualDevices.size() << "virtual";
 }
 
-bool AudioEngine::selectMonitorDevice(void* pConfig)
+void AudioEngine::refreshDeviceList()
 {
-    (void)pConfig;
-    // Similar to above, we let miniaudio use the default playback device
-    // for monitoring (usually headphones/speakers)
-    return true;
+    enumerateDevices();
+    emit devicesRefreshed();
+}
+
+bool AudioEngine::isVirtualDevice(const QString& name)
+{
+    // Check for common virtual audio device names
+    QString lowerName = name.toLower();
+    return lowerName.contains("cable") ||
+           lowerName.contains("blackhole") ||
+           lowerName.contains("vb-audio") ||
+           lowerName.contains("virtual") ||
+           lowerName.contains("stereo mix") ||
+           lowerName.contains("what u hear");
+}
+
+// ============================================================================
+// Static Duration Getter
+// ============================================================================
+
+qint64 AudioEngine::getAudioFileDuration(const QString& filePath)
+{
+    ma_decoder decoder;
+    ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 2, 48000);
+
+    ma_result result;
+#ifdef Q_OS_WIN
+    // Use wide char version for Windows to support Unicode paths
+    result = ma_decoder_init_file_w(reinterpret_cast<const wchar_t*>(filePath.utf16()), &config, &decoder);
+#else
+    result = ma_decoder_init_file(filePath.toUtf8().constData(), &config, &decoder);
+#endif
+
+    if (result == MA_SUCCESS) {
+        ma_uint64 lengthInFrames;
+        result = ma_decoder_get_length_in_pcm_frames(&decoder, &lengthInFrames);
+        ma_decoder_uninit(&decoder);
+
+        if (result == MA_SUCCESS) {
+            // Calculate duration in milliseconds
+            ma_uint64 durationMs = (lengthInFrames * 1000) / 48000;
+            return static_cast<qint64>(durationMs);
+        }
+    }
+
+    // miniaudio couldn't decode this file (unsupported format)
+    return -1;
 }
 
 // ============================================================================
@@ -348,11 +478,8 @@ void AudioEngine::monitorDataCallback(ma_device* pDevice, void* pOutput, const v
     // For monitoring, we play just the file (not the mic to avoid feedback)
     std::vector<float> fileData(frameCount * 2);
     if (pDecoder && engine->m_playbackState.load() == Playing) {
-        // We need to read from the same decoder without affecting playback
-        // This is tricky - for now, we just mix what we can
-        // A better approach would be to use a separate decoder or resampling
-
-        // For monitoring, we'll just output the file data
+        // Note: This would need a separate decoder for accurate monitoring
+        // For now, output silence to avoid feedback
         float monitorVol = engine->m_monitorVolume.load();
         for (ma_uint32 i = 0; i < frameCount * 2; i++) {
             outputFloat[i] = fileData[i] * monitorVol;
@@ -363,7 +490,7 @@ void AudioEngine::monitorDataCallback(ma_device* pDevice, void* pOutput, const v
 }
 
 void AudioEngine::mixAudio(float* output, const float* micData, const float* fileData,
-                           size_t frameCount, float micVol, float fileVol)
+    size_t frameCount, float micVol, float fileVol)
 {
     (void)micVol; // Already applied in mic callback
     (void)fileVol; // Already applied in playback callback
@@ -396,7 +523,15 @@ void AudioEngine::playSound(const QString& filePath)
     ma_decoder* pNewDecoder = new ma_decoder;
     ma_decoder_config decoderConfig = ma_decoder_config_init(ma_format_f32, 2, m_sampleRate);
 
-    if (ma_decoder_init_file(filePath.toStdString().c_str(), &decoderConfig, pNewDecoder) != MA_SUCCESS) {
+    ma_result result;
+#ifdef Q_OS_WIN
+    // Use wide char version for Windows to support Unicode paths
+    result = ma_decoder_init_file_w(reinterpret_cast<const wchar_t*>(filePath.utf16()), &decoderConfig, pNewDecoder);
+#else
+    result = ma_decoder_init_file(filePath.toUtf8().constData(), &decoderConfig, pNewDecoder);
+#endif
+
+    if (result != MA_SUCCESS) {
         qWarning() << "Failed to open or decode file:" << filePath;
         delete pNewDecoder;
         emit error(tr("Failed to open audio file: %1").arg(filePath));

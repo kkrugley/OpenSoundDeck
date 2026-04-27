@@ -1,14 +1,14 @@
 /* src/AudioEngine.h */
 
 /*
- * OpenSoundDeck
- * Copyright (C) 2025 Pavel Kruhlei
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- */
+* OpenSoundDeck
+* Copyright (C) 2025 Pavel Kruhlei
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*/
 
 #pragma once
 
@@ -21,6 +21,7 @@
 #include <QThread>
 #include <QQueue>
 #include <QByteArray>
+#include <QList>
 
 // Miniaudio type definitions (must be before forward declarations)
 // Note: These typedefs must match miniaudio.h definitions
@@ -40,6 +41,20 @@ struct AudioFrame {
     float right;
 };
 
+// Device information structure
+struct AudioDeviceInfo {
+    QString id;
+    QString name;
+    bool isDefault;
+    bool isVirtual;
+};
+
+struct DeviceList {
+    QList<AudioDeviceInfo> inputDevices;
+    QList<AudioDeviceInfo> outputDevices;
+    QList<AudioDeviceInfo> virtualDevices;
+};
+
 class AudioEngine : public QObject
 {
     Q_OBJECT
@@ -55,6 +70,7 @@ public:
     ~AudioEngine();
 
     bool init();
+    static AudioEngine* instance();
 
     // Sound playback
     void playSound(const QString& filePath);
@@ -74,11 +90,19 @@ public:
     float getFileVolume() const { return m_fileVolume.load(); }
     float getMonitorVolume() const { return m_monitorVolume.load(); }
 
+    // Device enumeration
+    void refreshDeviceList();
+    const DeviceList& getDeviceList() const { return m_deviceList; }
+
+    // Get duration of audio file (in milliseconds)
+    static qint64 getAudioFileDuration(const QString& filePath);
+
 signals:
     void positionChanged(ma_uint64 positionMillis);
     void durationReady(ma_uint64 durationMillis);
     void playbackFinished();
     void error(const QString& message);
+    void devicesRefreshed();
 
 private slots:
     void onUpdatePositionTimer();
@@ -133,7 +157,12 @@ private:
     std::atomic<ma_uint64> m_currentPositionMillis{static_cast<ma_uint64>(0)};
     std::atomic<ma_uint64> m_durationMillis{static_cast<ma_uint64>(0)};
 
+    // Device list
+    DeviceList m_deviceList;
+    QMutex m_deviceListMutex;
+
     QTimer* m_positionUpdateTimer;
+    static AudioEngine* s_instance;
 
     // Callbacks
     static void micDataCallback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount);
@@ -142,9 +171,9 @@ private:
 
     // Mixing function
     void mixAudio(float* output, const float* micData, const float* fileData,
-                  size_t frameCount, float micVol, float fileVol);
+        size_t frameCount, float micVol, float fileVol);
 
-    // Platform-specific device selection
-    bool selectVirtualOutputDevice(void* pConfig);
-    bool selectMonitorDevice(void* pConfig);
+    // Device enumeration helpers
+    void enumerateDevices();
+    bool isVirtualDevice(const QString& name);
 };

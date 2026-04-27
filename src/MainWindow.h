@@ -23,6 +23,7 @@
 #include <QMainWindow>
 #include <QKeyEvent>
 #include "AudioEngine.h"
+#include "Settings.h"
 
 class GlobalHotkeyManager;
 class QTableWidget;
@@ -81,12 +82,15 @@ private slots:
     void onDurationChanged(qint64 duration);
     void onHeadphonesMuteClicked(bool checked);
     void onMicMuteClicked(bool checked);
-    void onAboutClicked();
+void onAboutClicked();
+void onGetHelpClicked();
 void onKeepOnTopToggled(bool checked);
 void onOfflineManualClicked();
-void onPlaybackFinished();
-void onPositionChanged(ma_uint64 position);
-void onAudioError(const QString& message);
+void onSupportProjectClicked();
+    void onPlaybackFinished();
+    void onPositionChanged(ma_uint64 position);
+    void onAudioError(const QString& message);
+    void onSettingsThemeChanged(ThemeMode theme);
 
 
 protected:
@@ -163,7 +167,9 @@ private:
     // 
     
     // Help Actions
+    QAction *m_getHelpAction;
     QAction *m_aboutAction;
+    QAction *m_supportProjectAction;
     QAction *m_offlineManualAction;
     QAction *m_aboutQtAction;
 

@@ -58,6 +58,7 @@ private:
     void setupUI();
     void updateStatus();
     void downloadAndInstall();
+    void showManualConfigurationGuide();
 
 #ifdef Q_OS_WIN
     static bool checkVBCableInstalled();

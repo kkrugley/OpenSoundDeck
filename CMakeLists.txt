@@ -134,6 +134,9 @@ set(APP_SOURCES
     src/AudioEngine.cpp
     src/VirtualAudioSetupDialog.cpp
     src/miniaudio_impl.cpp
+    src/Settings.cpp
+    src/SupportDialog.cpp
+    src/HelpDialog.cpp
     resources.qrc
 )
 

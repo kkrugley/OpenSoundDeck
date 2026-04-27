@@ -24,6 +24,9 @@
 #include "GlobalHotkeyManager.h"
 #include "HotkeyCaptureDialog.h"
 #include "VirtualAudioSetupDialog.h"
+#include "Settings.h"
+#include "SupportDialog.h"
+#include "HelpDialog.h"
 
 #include <QApplication>
 #include <QTableWidget>
@@ -99,10 +102,12 @@ if (!m_audioEngine->init()) {
     m_pasteAction = new QAction(tr("&Paste"), this);
     m_settingsAction->setShortcut(tr("Ctrl+P"));
 
-    // Меню Help
-    m_aboutAction = new QAction(tr("&About"), this);
-    m_offlineManualAction = new QAction(tr("Offline &Manual"), this);
-    m_aboutQtAction = new QAction(tr("About &Qt"), this);
+// Меню Help
+m_getHelpAction = new QAction(tr("&Get Help / Feedback"), this);
+m_aboutAction = new QAction(tr("&About OpenSoundDeck"), this);
+m_supportProjectAction = new QAction(tr("&Support Project"), this);
+m_offlineManualAction = new QAction(tr("Offline &Manual"), this);
+m_aboutQtAction = new QAction(tr("About &Qt"), this);
 
 
     // Helper lambda to load SVG icons
@@ -188,10 +193,13 @@ if (!m_audioEngine->init()) {
     m_windowMenu->addSeparator();
     m_windowMenu->addAction(m_keepOnTopAction);
 
-    m_helpMenu->addAction(m_aboutAction);
-    m_helpMenu->addAction(m_offlineManualAction);
-    m_helpMenu->addSeparator();
-    m_helpMenu->addAction(m_aboutQtAction);
+m_helpMenu->addAction(m_supportProjectAction);
+m_helpMenu->addSeparator();
+m_helpMenu->addAction(m_getHelpAction);
+m_helpMenu->addAction(m_offlineManualAction);
+m_helpMenu->addSeparator();
+m_helpMenu->addAction(m_aboutAction);
+m_helpMenu->addAction(m_aboutQtAction);
     
     // Панель инструментов
     m_playbackToolBar->addAction(m_playAction);
@@ -288,10 +296,20 @@ if (!m_audioEngine->init()) {
     connect(m_importAction, &QAction::triggered, this, &MainWindow::onImportTriggered);
     connect(m_saveAction, &QAction::triggered, this, &MainWindow::onSaveTriggered);
     connect(m_saveAsAction, &QAction::triggered, this, &MainWindow::onSaveAsTriggered);
-    connect(m_settingsAction, &QAction::triggered, this, &MainWindow::onSettingsClicked);
-    connect(m_aboutAction, &QAction::triggered, this, &MainWindow::onAboutClicked);
-    connect(m_offlineManualAction, &QAction::triggered, this, &MainWindow::onOfflineManualClicked);
-    connect(m_aboutQtAction, &QAction::triggered, qApp, &QApplication::aboutQt);
+connect(m_settingsAction, &QAction::triggered, this, &MainWindow::onSettingsClicked);
+connect(m_getHelpAction, &QAction::triggered, this, &MainWindow::onGetHelpClicked);
+connect(m_aboutAction, &QAction::triggered, this, &MainWindow::onAboutClicked);
+connect(m_supportProjectAction, &QAction::triggered, this, &MainWindow::onSupportProjectClicked);
+connect(m_offlineManualAction, &QAction::triggered, this, &MainWindow::onOfflineManualClicked);
+connect(m_aboutQtAction, &QAction::triggered, qApp, &QApplication::aboutQt);
+
+    // Connect settings signals for immediate theme application
+    Settings* settings = Settings::instance();
+    connect(settings, &Settings::themeChanged, this, &MainWindow::onSettingsThemeChanged);
+    
+    // We don't need the metaDataReader anymore since we use miniaudio for duration
+    // But keep it for compatibility if needed
+    // delete m_metaDataReader; // Uncomment if you want to remove it completely
 
     // Меню Window
     connect(m_minimizeAction, &QAction::triggered, this, &MainWindow::showMinimized);
@@ -354,24 +372,46 @@ void MainWindow::dropEvent(QDropEvent *event)
 
 void MainWindow::addSoundFile(const QString& filePath)
 {
+    // Check if file format is supported
+    QFileInfo fileInfo(filePath);
+    QString extension = fileInfo.suffix().toLower();
+    QStringList supportedFormats = {"mp3", "wav", "flac", "ogg"};
+    
+    if (!supportedFormats.contains(extension)) {
+        // Show warning about unsupported format
+        QMessageBox::warning(this, tr("Unsupported Format"), 
+            tr("The file '%1' has an unsupported format (.%2).\n\n"
+               "Supported formats: MP3, WAV, FLAC, OGG\n\n"
+               "To use this file, please convert it to a supported format first.").arg(fileInfo.fileName()).arg(extension));
+        return;
+    }
+    
     const int newRow = m_soundTableWidget->rowCount();
     m_soundTableWidget->insertRow(newRow);
 
-    QFileInfo fileInfo(filePath);
     QTableWidgetItem *tagItem = new QTableWidgetItem(fileInfo.fileName());
     tagItem->setData(Qt::UserRole, filePath);
-    
-    QTableWidgetItem *durationItem = new QTableWidgetItem(tr("Loading..."));
+
+    // Get duration using miniaudio instead of QMediaPlayer
+    qint64 durationMs = AudioEngine::getAudioFileDuration(filePath);
+    QTableWidgetItem *durationItem;
+    if (durationMs > 0) {
+        int seconds = durationMs / 1000;
+        int minutes = seconds / 60;
+        seconds %= 60;
+        durationItem = new QTableWidgetItem(QString("%1:%2").arg(minutes).arg(seconds, 2, 10, QChar('0')));
+    } else {
+        durationItem = new QTableWidgetItem(tr("Unknown"));
+    }
+
     QTableWidgetItem *hotkeyItem = new QTableWidgetItem("None");
 
     m_soundTableWidget->setItem(newRow, 1, tagItem);
     m_soundTableWidget->setItem(newRow, 2, durationItem);
     m_soundTableWidget->setItem(newRow, 3, hotkeyItem);
 
-    m_metaDataReader->setSource(QUrl::fromLocalFile(filePath));
-
     updateIndexes();
-    qDebug() << "Added sound:" << filePath;
+    qDebug() << "Added sound:" << filePath << "Duration:" << durationMs << "ms";
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -447,6 +487,13 @@ void MainWindow::onSettingsClicked()
 {
     SettingsDialog dialog(this);
     dialog.exec();
+    
+    // Settings are applied immediately via signals/slots
+    // Check if restart is needed
+    if (dialog.needsRestart()) {
+        // Restart will be handled by the exit code in main.cpp
+        QApplication::exit(100);
+    }
 }
 
 void MainWindow::onNewTriggered()
@@ -632,7 +679,12 @@ void MainWindow::onImportTriggered()
         this,
         tr("Import Audio Files"),
         libraryPath,
-        tr("Audio Files (*.mp3 *.wav *.flac *.ogg)"));
+        tr("Audio Files (*.mp3 *.wav *.flac *.ogg);;"
+           "MP3 (*.mp3);;"
+           "WAV (*.wav);;"
+           "FLAC (*.flac);;"
+           "OGG Vorbis (*.ogg);;"
+           "All Files (*)"));
 
     for (const QString &fileName : fileNames) {
         if (!fileName.isEmpty()) {
@@ -686,6 +738,26 @@ void MainWindow::savePlaylist(const QString& fileName)
 void MainWindow::onOfflineManualClicked()
 {
     QMessageBox::information(this, tr("Offline Manual"), tr("This feature is not implemented yet."));
+}
+
+void MainWindow::onGetHelpClicked()
+{
+    HelpDialog dialog(this);
+    dialog.exec();
+}
+
+void MainWindow::onSupportProjectClicked()
+{
+    SupportDialog dialog(this);
+    dialog.exec();
+}
+
+void MainWindow::onSettingsThemeChanged(ThemeMode theme)
+{
+    Q_UNUSED(theme)
+    // Theme changes will be applied on next dialog open
+    // or we could reload the stylesheet here
+    // For now, we notify the user that restart might be needed for full effect
 }
 
 void MainWindow::onKeepOnTopToggled(bool checked)
@@ -965,9 +1037,7 @@ void MainWindow::onAssignHotkey()
 
 QString MainWindow::getLibraryPath() const
 {
-QSettings settings("kkrugley", "OpenSoundDeck");
-QString defaultPath = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
-return settings.value("library/path", defaultPath).toString();
+    return Settings::instance()->libraryPath();
 }
 
 void MainWindow::onAudioError(const QString& message)
