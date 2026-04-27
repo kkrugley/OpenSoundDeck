@@ -1,58 +1,42 @@
-'use client';
+import type { Metadata } from 'next';
+import { buildOgUrl } from '@/lib/og';
+import { SITE_URL } from '@/lib/constants';
+import HomeContent from './_home';
 
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
-import { Hero } from '@/components/Hero';
-import { Features } from '@/components/Features';
-import { Statistics } from '@/components/Statistics';
-import { Privacy } from '@/components/Privacy';
-import { FAQ } from '@/components/FAQ';
-import { SoundEngine } from '@/components/SoundEngine';
+const ogImage = buildOgUrl({
+  title: 'The Open Source Soundboard',
+  description:
+    'Inject audio directly into your microphone with global hotkeys. Cross-platform, free, and built for streamers and gamers.',
+  tags: ['Open Source', 'Cross-Platform', 'C++20 Native', 'MIT License'],
+});
 
-export default function Home() {
-  const { i18n } = useTranslation();
-  const [currentLang, setCurrentLang] = useState('en');
-  const [mounted, setMounted] = useState(false);
+export const metadata: Metadata = {
+  title: 'OpenSoundDeck — The Open Source Soundboard',
+  description:
+    'Inject audio directly into your microphone with global hotkeys. Cross-platform, free, and built for streamers and gamers.',
+  keywords: [
+    'soundboard', 'open source', 'voice chat', 'streaming', 'microphone',
+    'audio', 'hotkeys', 'cross-platform', 'discord', 'linux', 'windows', 'macos',
+  ],
+  openGraph: {
+    title: 'OpenSoundDeck — The Open Source Soundboard',
+    description:
+      'Inject audio directly into your microphone with global hotkeys. Cross-platform, free, and built for streamers and gamers.',
+    url: SITE_URL,
+    siteName: 'OpenSoundDeck',
+    type: 'website',
+    locale: 'en_US',
+    alternateLocale: ['ru_RU', 'pl_PL'],
+    images: [{ url: ogImage, width: 1200, height: 630, alt: 'OpenSoundDeck — The Open Source Soundboard', type: 'image/png' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'OpenSoundDeck — The Open Source Soundboard',
+    description: 'Inject audio directly into your microphone with global hotkeys. Cross-platform, free.',
+    images: [ogImage],
+  },
+};
 
-  useEffect(() => {
-    setMounted(true);
-    // Set initial language from i18n
-    setCurrentLang(i18n.language || 'en');
-  }, [i18n.language]);
-
-  const handleLanguageChange = (lang: string) => {
-    i18n.changeLanguage(lang);
-    setCurrentLang(lang);
-    // Store in localStorage for persistence
-    localStorage.setItem('i18nextLng', lang);
-  };
-
-  if (!mounted) {
-    return (
-      <div className="flex min-h-screen flex-col">
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-[var(--text-secondary)]">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex min-h-screen flex-col">
-      <Header currentLang={currentLang} onLanguageChange={handleLanguageChange} />
-      
-      <main className="flex-1">
-        <Hero />
-        <Features />
-        <Statistics />
-        <Privacy />
-        <FAQ />
-        <SoundEngine />
-      </main>
-      
-      <Footer currentLang={currentLang} onLanguageChange={handleLanguageChange} />
-    </div>
-  );
+export default function HomePage() {
+  return <HomeContent />;
 }

@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@vercel/og": "^0.6.3",
     "@phosphor-icons/react": "^2.1.10",
     "clsx": "^2.1.1",
     "i18next": "^26.0.8",
