@@ -1,0 +1,396 @@
+{
+  "metadata": {
+    "title": "OpenSoundDeck — Open Source Soundboard",
+    "description": "Wieloplatformowy, open source soundboard do rozmów głosowych i streamingu. Wstrzykuj audio bezpośrednio do mikrofonu za pomocą global hotkeys."
+  },
+  "nav": {
+    "github": "GitHub",
+    "docs": "Dokumentacja",
+    "download": "Pobierz",
+    "help": "Pomoc",
+    "support": "Wsparcie"
+  },
+  "hero": {
+    "badge": "Nowość",
+    "banner": "OpenSoundDeck jest już dostępny na Linuxie, Windowsie i macOS.",
+    "downloadNow": "Pobierz teraz",
+    "title": "Open source soundboard",
+    "tagline": "Wstrzykuj audio bezpośrednio do mikrofonu za pomocą global hotkeys. Wieloplatformowy, darmowy i stworzony dla streamerów i graczy.",
+    "tabs": {
+      "curl": "curl",
+      "git": "git",
+      "brew": "brew",
+      "choco": "choco"
+    },
+    "comingSoon": "Wkrótce",
+    "comingSoonNote": "Wsparcie dla menedżerów pakietów wkrótce. Na razie proszę użyć curl lub git.",
+    "download": "Pobierz",
+    "readDocs": "Przeczytaj dokumentację"
+  },
+  "features": {
+    "title": "Czym jest OpenSoundDeck?",
+    "description": "OpenSoundDeck to open source aplikacja umożliwiająca odtwarzanie dźwięków przez mikrofon. Zbudowana w C++20 i Qt6 dla maksymalnej wydajności i minimalnego opóźnienia.",
+    "list": {
+      "micInjection": {
+        "title": "Mic Injection",
+        "description": "Odtwarza pliki audio tak, aby brzmiały jakby pochodziły z Państwa mikrofonu."
+      },
+      "globalHotkeys": {
+        "title": "Global Hotkeys",
+        "description": "Przypisz globalne hotkeys do ulubionych dźwięków, aby uruchamiać je z dowolnego miejsca, nawet podczas gry."
+      },
+      "crossPlatform": {
+        "title": "Wieloplatformowość",
+        "description": "Jedna natywna aplikacja działająca na Linuxie, Windowsie i macOS."
+      },
+      "soundMixing": {
+        "title": "Sound & Mic Mixing",
+        "description": "Państwa głos i odtwarzane audio są bezproblemowo mieszane. Przyjaciele nadal będą Państwa słyszeć!"
+      },
+      "simpleUI": {
+        "title": "Prosty interfejs",
+        "description": "Łatwy w użyciu interfejs do zarządzania biblioteką dźwięków i konfiguracji urządzeń."
+      },
+      "openSource": {
+        "title": "Open Source",
+        "description": "100% darmowe i open source. Zbudowane z przejrzystością i pasją do świetnego oprogramowania."
+      },
+      "lowLatency": {
+        "title": "Niskie opóźnienie",
+        "description": "Napisane w C++20 z frameworkiem Qt dla responsywnego, natywnego doświadczenia z minimalnym opóźnieniem."
+      }
+    }
+  },
+  "statistics": {
+    "title": "Open source soundboard",
+    "description": "Z rosnącą społecznością kontrybutorów i użytkowników na całym świecie.",
+    "labels": {
+      "stars": "GitHub Stars",
+      "contributors": "Kontrybutorzy",
+      "forks": "Forki"
+    }
+  },
+  "privacy": {
+    "title": "Zbudowane z naciskiem na prywatność",
+    "description": "OpenSoundDeck nie przechowuje żadnych Państwa danych. Cała obróbka audio odbywa się lokalnie na Państwa komputerze. Nie zbieramy analityki, telemetrii ani danych o użyciu. Państwa dźwięki, Państwa dane, Państwa prywatność.",
+    "learnMore": "Dowiedz się więcej o prywatności"
+  },
+  "faq": {
+    "title": "Często zadawane pytania",
+    "items": {
+      "whatIs": {
+        "question": "Czym jest OpenSoundDeck?",
+        "answer": "OpenSoundDeck to darmowa aplikacja open source, która umożliwia odtwarzanie dźwięków przez wejście mikrofonu, aby inni mogli je usłyszeć. Czy to gra z przyjaciółmi, streaming czy rozmowa konferencyjna — mogą Państwo odtwarzać efekty dźwiękowe, muzykę lub klipy jednym przyciskiem."
+      },
+      "howToUse": {
+        "question": "Jak używać OpenSoundDeck?",
+        "answer": "Po instalacji skonfiguruj urządzenia audio w ustawieniach. Wybierz mikrofon jako wejście, virtual cable jako wyjście i słuchawki do monitorowania. Następnie po prostu dodaj pliki dźwiękowe do biblioteki i przypisz hotkeys do ich uruchamiania."
+      },
+      "extraSoftware": {
+        "question": "Czy potrzebuję dodatkowego oprogramowania?",
+        "answer": "Na Windowsie potrzebny jest VB-Audio Virtual Cable. Na macOS — BlackHole. Na Linuxie wszystko działa automatycznie przez PulseAudio/PipeWire. Aplikacja przeprowadzi Państwa przez konfigurację przy pierwszym uruchomieniu."
+      },
+      "free": {
+        "question": "Czy to jest darmowe?",
+        "answer": "Tak! OpenSoundDeck jest całkowicie darmowy i open source na licencji MIT. Żadnych reklam, żadnych paywall — tylko czysta funkcjonalność."
+      },
+      "discord": {
+        "question": "Czy mogę używać tego z Discordem/Zoomem/Teams?",
+        "answer": "Zdecydowanie! OpenSoundDeck działa z każdą aplikacją używającą mikrofonu. Po prostu wybierz virtual cable jako wejście mikrofonu w ustawieniach aplikacji."
+      },
+      "formats": {
+        "question": "Jakie formaty audio są obsługiwane?",
+        "answer": "OpenSoundDeck obsługuje formaty MP3, WAV, OGG i FLAC. Można dodać dowolną liczbę dźwięków do biblioteki."
+      },
+      "dataPrivate": {
+        "question": "Czy moje dane są prywatne?",
+        "answer": "Tak! OpenSoundDeck nie przechowuje żadnych Państwa danych. Wszystko jest przetwarzane lokalnie na Państwa komputerze. Nie zbieramy analityki ani telemetrii."
+      },
+      "contribute": {
+        "question": "Czy mogę wnieść wkład?",
+        "answer": "Tak! Z przyjemnością przyjmujemy wkłady wszelkiego rodzaju. Sprawdź nasze repozytorium GitHub, aby zapoznać się z otwartymi issues i wytycznymi dotyczącymi kontrybucji."
+      }
+    }
+  },
+  "engine": {
+    "title": "Napędzany przez miniaudio",
+    "description": "OpenSoundDeck używa miniaudio, fantastycznej jednoplikowej biblioteki audio napisanej w C. Zapewnia wieloplatformowe odtwarzanie i przechwytywanie audio z minimalnym opóźnieniem. W połączeniu z naszym niestandardowym ring buffer mixer otrzymują Państwo profesjonalną jakość dźwięku z solidną wydajnością.",
+    "features": {
+      "miniaudio": "miniaudio",
+      "cpp20": "C++20",
+      "lowLatency": "Niskie opóźnienie",
+      "mixing": "Miksowanie"
+    },
+    "learnMore": "Dowiedz się więcej o silniku audio"
+  },
+  "footer": {
+    "description": "Open source soundboard do rozmów głosowych i streamingu.",
+    "social": "Social media",
+    "docs": "Dokumentacja",
+    "legal": "Informacje prawne",
+    "language": "Język",
+    "copyright": "© {year} OpenSoundDeck. Wszelkie prawa zastrzeżone.",
+    "builtWith": "Zbudowane z pasją i open source."
+  },
+  "help": {
+    "title": "Pomoc i wsparcie",
+    "description": "Potrzebują Państwo pomocy z OpenSoundDeck? Znajdź odpowiedzi w naszej dokumentacji lub skontaktuj się z nami bezpiecznie za pomocą szyfrowania PGP.",
+    "cards": {
+      "docs": {
+        "title": "Dokumentacja",
+        "description": "Przeczytaj nasze przewodniki i dokumentację API",
+        "action": "Przeczytaj dokumentację"
+      },
+      "github": {
+        "title": "GitHub Issues",
+        "description": "Zgłoś błędy lub zaproponuj funkcje",
+        "action": "Otwórz issues"
+      },
+      "contact": {
+        "title": "Skontaktuj się z nami",
+        "description": "Wyślij zaszyfrowaną wiadomość",
+        "action": "Kontakt"
+      }
+    },
+    "form": {
+      "title": "Zaszyfrowany kontakt",
+      "description": "Wyślij do nas zaszyfrowaną wiadomość za pomocą PGP. Państwa wiadomość zostanie zaszyfrowana w przeglądarce przed wysłaniem.",
+      "viewKey": "Zobacz nasz klucz publiczny",
+      "name": "Imię i nazwisko",
+      "email": "Email",
+      "message": "Wiadomość",
+      "send": "Wyślij zaszyfrowaną wiadomość",
+      "encrypting": "Szyfrowanie wiadomości...",
+      "success": "Zaszyfrowana wiadomość została pomyślnie wysłana!",
+      "error": "Nie udało się wysłać wiadomości. Proszę spróbować ponownie.",
+      "copyKey": "Kopiuj klucz",
+      "copied": "Skopiowano!",
+      "publicKey": "Publiczny klucz PGP",
+      "keyDescription": "Skopiuj ten klucz publiczny, aby szyfrować wiadomości, które tylko my możemy odczytać."
+    }
+  },
+  "support": {
+    "title": "Wesprzyj OpenSoundDeck",
+    "description": "OpenSoundDeck jest darmowy i open source. Państwa wsparcie pomaga nam utrzymywać i ulepszać projekt. Wybierz poniżej sposób wsparcia.",
+    "methods": {
+      "github": {
+        "name": "GitHub Sponsors",
+        "description": "Wesprzyj rozwój przez GitHub"
+      },
+      "crypto": {
+        "name": "Kryptowaluty",
+        "description": "BTC, ETH, USDC i więcej",
+        "note": "Wyślij kryptowalutę na dowolny z adresów poniżej. Upewnij się, że używasz właściwej sieci."
+      },
+      "paypal": {
+        "name": "PayPal",
+        "description": "Szybkie i łatwe darowizny"
+      },
+      "kofi": {
+        "name": "Ko-fi",
+        "description": "Kup mi kawę"
+      }
+    },
+    "thankYou": "Dziękujemy za wsparcie OpenSoundDeck! Każdy wkład pomaga nam budować lepszy soundboard dla wszystkich."
+  },
+  "download": {
+    "title": "Pobierz OpenSoundDeck",
+    "description": "Wybierz swoją platformę poniżej, aby pobrać najnowszą wersję OpenSoundDeck. Wszystkie pliki do pobrania są darmowe i open source.",
+    "orInstall": "Lub zainstaluj przez menedżera pakietów",
+    "copyCommand": "Kopiuj komendę",
+    "windows": {
+      "title": "Wymagania Windows",
+      "description": "Przed użyciem OpenSoundDeck należy zainstalować VB-Audio Virtual Cable. Aplikacja przeprowadzi Państwa przez konfigurację przy pierwszym uruchomieniu.",
+      "download": "Pobierz VB-Cable"
+    },
+    "macos": {
+      "title": "Wymagania macOS",
+      "description": "Należy zainstalować wirtualny sterownik audio BlackHole. Uruchom brew install blackhole-2ch lub pobierz ręcznie.",
+      "download": "Pobierz BlackHole"
+    },
+    "linux": {
+      "title": "Informacje o Linuxie",
+      "description": "Nie są wymagane dodatkowe sterowniki! OpenSoundDeck automatycznie tworzy wirtualne urządzenia audio przez PulseAudio lub PipeWire."
+    },
+    "alternative": "Alternatywne pobieranie",
+    "allReleases": "Wszystkie wydania",
+    "buildFromSource": "Zbuduj ze źródeł"
+  },
+  "docs": {
+    "title": "Dokumentacja",
+    "sections": {
+      "gettingStarted": {
+        "title": "Pierwsze kroki",
+        "whatIs": {
+          "title": "Czym jest OpenSoundDeck?",
+          "items": [
+            "Odtwarzaj efekty dźwiękowe, muzykę lub klipy audio przez mikrofon",
+            "Działa z Discordem, Zoomem, Teams i każdą aplikacją do rozmów głosowych",
+            "Global hotkeys do uruchamiania dźwięków z dowolnego miejsca (nawet podczas gry)",
+            "Wieloplatformowy: Linux, Windows i macOS",
+            "100% darmowy i open source"
+          ]
+        },
+        "requirements": {
+          "title": "Wymagania systemowe",
+          "linux": "PulseAudio lub PipeWire",
+          "windows": "Windows 10/11 z VB-Audio Virtual Cable",
+          "macos": "macOS 11+ z BlackHole"
+        }
+      },
+      "installation": {
+        "title": "Instalacja"
+      },
+      "configuration": {
+        "title": "Konfiguracja",
+        "audioSetup": {
+          "title": "Konfiguracja urządzeń audio",
+          "steps": [
+            "Otwórz ustawienia OpenSoundDeck",
+            "Wybierz mikrofon jako Input Device",
+            "Wybierz virtual cable jako Output Device",
+            "Wybierz słuchawki/głośniki jako Monitor Device",
+            "Dostosuj poziomy głośności dla każdego urządzenia"
+          ]
+        },
+        "addingSounds": {
+          "title": "Dodawanie dźwięków",
+          "steps": [
+            "Kliknij przycisk + w głównym oknie",
+            "Wybierz plik audio (MP3, WAV, OGG lub FLAC)",
+            "Przypisz hotkey klikając pole hotkey i naciskając pożądaną kombinację klawiszy",
+            "Przetestuj dźwięk klikając przycisk odtwarzania lub naciskając hotkey"
+          ]
+        },
+        "hotkeys": {
+          "title": "Konfiguracja hotkeys",
+          "description": "Global hotkeys działają nawet gdy OpenSoundDeck nie jest aktywne. Popularne kombinacje:"
+        }
+      },
+      "troubleshooting": {
+        "title": "Rozwiązywanie problemów",
+        "stillNeedHelp": {
+          "title": "Nadal potrzebujesz pomocy?",
+          "contact": "Skontaktuj się z nami",
+          "githubIssue": "Otwórz issue na GitHubie"
+        }
+      }
+    },
+    "resources": "Zasoby"
+  },
+  "legal": {
+    "title": "Informacje prawne",
+    "description": "Przejrzystość i zaufanie są dla nas ważne. Tutaj znajdą Państwo naszą politykę prywatności, warunki korzystania i informacje o licencji.",
+    "tabs": {
+      "privacy": "Polityka prywatności",
+      "terms": "Warunki korzystania",
+      "license": "Licencja"
+    },
+    "updated": "Ostatnia aktualizacja: {date}",
+    "privacy": {
+      "dataCollection": {
+        "title": "Zbieranie danych",
+        "content": "OpenSoundDeck nie zbiera, nie przechowuje ani nie przesyła żadnych danych osobowych. Cała obróbka audio i odtwarzanie dźwięków odbywa się lokalnie na Państwa komputerze. Nie używamy analityki, telemetrii ani żadnych mechanizmów śledzenia."
+      },
+      "localStorage": {
+        "title": "Pamięć lokalna",
+        "content": "Wszystkie Państwa ustawienia, hotkeys i informacje o bibliotece dźwięków są przechowywane lokalnie w katalogu konfiguracji użytkownika. Te dane nigdy nie opuszczają Państwa komputera."
+      },
+      "audioData": {
+        "title": "Dane audio",
+        "content": "OpenSoundDeck przetwarza audio w czasie rzeczywistym na Państwa urządzeniu. Żadne dane audio nie są nagrywane, przesyłane ani przechowywane przez aplikację. Wejście mikrofonu i odtwarzane dźwięki pozostają całkowicie pod Państwa kontrolą."
+      },
+      "thirdParty": {
+        "title": "Usługi stron trzecich",
+        "content": "Aplikacja nie komunikuje się z żadnymi zewnętrznymi serwerami ani usługami stron trzecich. Jedyną aktywnością sieciową jest sytuacja, gdy wyraźnie wybierzesz pobranie wirtualnych sterowników audio (Windows/macOS) lub sprawdzenie aktualizacji."
+      },
+      "contactForm": {
+        "title": "Formularz kontaktowy",
+        "content": "Podczas korzystania z naszego zaszyfrowanego formularza kontaktowego Państwa wiadomość jest szyfrowana za pomocą PGP w przeglądarce przed wysłaniem. Tylko zamierzony odbiorca może odszyfrować i przeczytać Państwa wiadomość."
+      },
+      "changes": {
+        "title": "Zmiany w polityce",
+        "content": "Możemy aktualizować tę politykę prywatności od czasu do czasu. Wszelkie zmiany zostaną opublikowane na tej stronie z zaktualizowaną datą wersji."
+      },
+      "contact": {
+        "title": "Skontaktuj się z nami",
+        "content": "Jeśli mają Państwo pytania dotyczące tej polityki prywatności, proszę skontaktować się z nami za pośrednictwem naszego zaszyfrowanego formularza kontaktowego."
+      }
+    },
+    "terms": {
+      "acceptance": {
+        "title": "Akceptacja warunków",
+        "content": "Pobierając, instalując lub używając OpenSoundDeck, zgadzają się Państwo na przestrzeganie tych Warunków korzystania. Jeśli nie zgadzają się Państwo z tymi warunkami, proszę nie używać oprogramowania."
+      },
+      "license": {
+        "title": "Licencja",
+        "content": "OpenSoundDeck jest licencjonowany na podstawie Licencji MIT. Mogą Państwo swobodnie używać, modyfikować i rozpowszechniać oprogramowanie zgodnie z warunkami tej licencji. Oprogramowanie jest dostarczane 'tak jak jest', bez żadnej gwarancji."
+      },
+      "responsible": {
+        "title": "Odpowiedzialne użytkowanie",
+        "content": "Zgadzają się Państwo używać OpenSoundDeck odpowiedzialnie i zgodnie z obowiązującym prawem. Ponoszą Państwo pełną odpowiedzialność za wszelkie treści odtwarzane za pośrednictwem aplikacji oraz sposób jej używania w rozmowach głosowych lub streamach."
+      },
+      "noWarranty": {
+        "title": "Brak gwarancji",
+        "content": "Oprogramowanie jest dostarczane bez żadnej gwarancji, wyraźnej ani domniemanej. Nie gwarantujemy, że oprogramowanie będzie wolne od błędów lub że spełni Państwa szczególne wymagania. Użytkowanie na własne ryzyko."
+      },
+      "limitation": {
+        "title": "Ograniczenie odpowiedzialności",
+        "content": "W żadnym wypadku autorzy ani posiadacze praw autorskich nie ponoszą odpowiedzialności za jakiekolwiek roszczenia, szkody ani inną odpowiedzialność, czy to w działaniu umownym, deliktowym czy inaczej, wynikającą z, związaną z lub w związku z oprogramowaniem lub jego użytkowaniem."
+      },
+      "contributions": {
+        "title": "Wkłady",
+        "content": "Wnosząc wkład do OpenSoundDeck, zgadzają się Państwo, że Państwa wkłady będą licencjonowane na tej samej Licencji MIT co projekt. Zachowują Państwo prawa autorskie do swoich wkładów, ale udzielają nam i wszystkim użytkownikom praw do ich używania zgodnie z warunkami Licencji MIT."
+      },
+      "changes": {
+        "title": "Zmiany w warunkach",
+        "content": "Zastrzegamy sobie prawo do modyfikacji tych warunków w dowolnym czasie. Zmiany wchodzą w życie natychmiast po opublikowaniu na tej stronie. Kontynuowanie użytkowania oprogramowania stanowi akceptację zmienionych warunków."
+      },
+      "contact": {
+        "title": "Kontakt",
+        "content": "W przypadku pytań dotyczących tych warunków, proszę skontaktować się z nami za pośrednictwem naszego zaszyfrowanego formularza kontaktowego."
+      }
+    },
+    "licenseSection": {
+      "title": "Licencja MIT",
+      "whatItMeans": {
+        "title": "Co to oznacza",
+        "items": [
+          "Mogą Państwo używać OpenSoundDeck do celów osobistych lub komercyjnych",
+          "Mogą Państwo modyfikować kod źródłowy",
+          "Mogą Państwo rozpowszechniać Państwa modyfikacje",
+          "Mogą Państwo dołączać go do oprogramowania własnościowego",
+          "Muszą Państwo dołączyć informację o prawach autorskich i licencji"
+        ]
+      },
+      "thirdParty": {
+        "title": "Licencje stron trzecich",
+        "content": "OpenSoundDeck używa kilku bibliotek open source. Ich licencje można znaleźć w repozytorium:",
+        "items": [
+          "miniaudio — Domena publiczna lub MIT License",
+          "Qt6 — LGPL v3",
+          "Inne zależności — Szczegóły w repozytorium"
+        ]
+      },
+      "viewOnGithub": "Zobacz na GitHubie"
+    }
+  },
+  "common": {
+    "loading": "Ładowanie...",
+    "error": "Błąd",
+    "retry": "Spróbuj ponownie",
+    "copy": "Kopiuj",
+    "copied": "Skopiowano!",
+    "learnMore": "Dowiedz się więcej",
+    "readMore": "Czytaj więcej",
+    "download": "Pobierz",
+    "send": "Wyślij",
+    "cancel": "Anuluj",
+    "close": "Zamknij",
+    "submit": "Wyślij",
+    "continue": "Kontynuuj",
+    "back": "Wstecz",
+    "next": "Dalej",
+    "previous": "Wstecz"
+  }
+}
