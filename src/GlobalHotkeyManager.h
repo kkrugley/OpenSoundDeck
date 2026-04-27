@@ -102,8 +102,10 @@ private slots:
 };
 
 // --- ИСПРАВЛЕНИЕ для QHash ---
-// Хэш-функция для нашей структуры X11Hotkey.
+// Хэш-функция для нашей структуры X11Hotkey (только для Linux).
 // Должна быть в глобальном пространстве имен или в std.
+#ifdef Q_OS_LINUX
 inline uint qHash(const GlobalHotkeyManager::X11Hotkey &key, uint seed = 0) {
     return qHash(key.keycode, seed) ^ qHash(key.modifiers, seed);
 }
+#endif

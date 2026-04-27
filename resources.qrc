@@ -1,9 +1,17 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource prefix="/">
     <file alias="icons/app-icon.png">icons/app-icon.png</file>
-    <file alias="icons/headphones.png">icons/headphones.png</file>
-    <file alias="icons/headphones-off.png">icons/headphones-off.png</file>
-    <file alias="icons/microphone.png">icons/microphone.png</file>
-    <file alias="icons/microphone-off.png">icons/microphone-off.png</file>
+    <file alias="icons/play.svg">icons/app/play.svg</file>
+    <file alias="icons/pause.svg">icons/app/pause.svg</file>
+    <file alias="icons/stop.svg">icons/app/stop.svg</file>
+    <file alias="icons/skip-forward.svg">icons/app/skip-forward.svg</file>
+    <file alias="icons/skip-back.svg">icons/app/skip-back.svg</file>
+    <file alias="icons/headphones.svg">icons/app/headphones.svg</file>
+    <file alias="icons/headphones-slash.svg">icons/app/headphones-slash.svg</file>
+    <file alias="icons/microphone.svg">icons/app/microphone.svg</file>
+    <file alias="icons/microphone-slash.svg">icons/app/microphone-slash.svg</file>
+    <file alias="icons/repeat.svg">icons/app/repeat.svg</file>
+    <file alias="icons/speaker-high.svg">icons/app/speaker-high.svg</file>
+    <file alias="icons/speaker-low.svg">icons/app/speaker-low.svg</file>
 </qresource>
 </RCC>

@@ -23,6 +23,10 @@
 #include "SettingsDialog.h"
 #include "GlobalHotkeyManager.h"
 #include "HotkeyCaptureDialog.h"
+#include "VirtualAudioSetupDialog.h"
+#include "Settings.h"
+#include "SupportDialog.h"
+#include "HelpDialog.h"
 
 #include <QApplication>
 #include <QTableWidget>
@@ -48,17 +52,26 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QMediaPlayer>
+#include <QTimer>
+#include <QtSvg/QSvgRenderer>
+#include <QPainter>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
+: QMainWindow(parent)
 {
-    // --- 1. ИНИЦИАЛИЗАЦИЯ СЛУЖЕБНЫХ ОБЪЕКТОВ ---
-    m_audioEngine = new AudioEngine(this);
-    if (!m_audioEngine->init()) {
-        // TODO: Handle audio engine initialization failure more gracefully
-        QMessageBox::critical(this, tr("Fatal Error"), tr("Failed to initialize audio engine. The application will now close."));
-        // В реальном приложении можно было бы запланировать закрытие, но для простоты пока оставим так
-    }
+qDebug() << "[MW 1] MainWindow constructor started";
+
+// --- 1. ИНИЦИАЛИЗАЦИЯ СЛУЖЕБНЫХ ОБЪЕКТОВ ---
+qDebug() << "[MW 2] Creating AudioEngine...";
+m_audioEngine = new AudioEngine(this);
+connect(m_audioEngine, &AudioEngine::error, this, &MainWindow::onAudioError);
+qDebug() << "[MW 3] Initializing AudioEngine...";
+if (!m_audioEngine->init()) {
+    qDebug() << "[MW ERROR] AudioEngine init failed!";
+    QMessageBox::critical(this, tr("Fatal Error"), tr("Failed to initialize audio engine. The application will now close."));
+} else {
+    qDebug() << "[MW 4] AudioEngine initialized OK";
+}
     m_metaDataReader = new QMediaPlayer(this);
     m_hotkeyManager = new GlobalHotkeyManager(this);
     connect(m_hotkeyManager, &GlobalHotkeyManager::hotkeyActivated, this, [this](int row){
@@ -89,18 +102,30 @@ MainWindow::MainWindow(QWidget *parent)
     m_pasteAction = new QAction(tr("&Paste"), this);
     m_settingsAction->setShortcut(tr("Ctrl+P"));
 
-    // Меню Help
-    m_aboutAction = new QAction(tr("&About"), this);
-    m_offlineManualAction = new QAction(tr("Offline &Manual"), this);
-    m_aboutQtAction = new QAction(tr("About &Qt"), this);
+// Меню Help
+m_getHelpAction = new QAction(tr("&Get Help / Feedback"), this);
+m_aboutAction = new QAction(tr("&About OpenSoundDeck"), this);
+m_supportProjectAction = new QAction(tr("&Support Project"), this);
+m_offlineManualAction = new QAction(tr("Offline &Manual"), this);
+m_aboutQtAction = new QAction(tr("About &Qt"), this);
 
 
-    // Панель инструментов (Playback)
-    m_playAction = new QAction(style()->standardIcon(QStyle::SP_MediaPlay), tr("Play"), this);
-    m_pauseAction = new QAction(style()->standardIcon(QStyle::SP_MediaPause), tr("Pause"), this);
-    m_stopAction = new QAction(style()->standardIcon(QStyle::SP_MediaStop), tr("Stop"), this);
-    m_nextAction = new QAction(style()->standardIcon(QStyle::SP_MediaSkipForward), tr("Next"), this);
-    m_prevAction = new QAction(style()->standardIcon(QStyle::SP_MediaSkipBackward), tr("Previous"), this);
+    // Helper lambda to load SVG icons
+    auto loadSvgIcon = [](const QString& path, const QSize& size = QSize(24, 24)) -> QIcon {
+        QSvgRenderer renderer(path);
+        QPixmap pixmap(size);
+        pixmap.fill(Qt::transparent);
+        QPainter painter(&pixmap);
+        renderer.render(&painter);
+        return QIcon(pixmap);
+    };
+
+    // Панель инструментов (Playback) - using Phosphor icons
+    m_playAction = new QAction(loadSvgIcon(":/icons/play.svg"), tr("Play"), this);
+    m_pauseAction = new QAction(loadSvgIcon(":/icons/pause.svg"), tr("Pause"), this);
+    m_stopAction = new QAction(loadSvgIcon(":/icons/stop.svg"), tr("Stop"), this);
+    m_nextAction = new QAction(loadSvgIcon(":/icons/skip-forward.svg"), tr("Next"), this);
+    m_prevAction = new QAction(loadSvgIcon(":/icons/skip-back.svg"), tr("Previous"), this);
 
     // Меню Window
     m_minimizeAction = new QAction(tr("Mi&nimize"), this);
@@ -168,10 +193,13 @@ MainWindow::MainWindow(QWidget *parent)
     m_windowMenu->addSeparator();
     m_windowMenu->addAction(m_keepOnTopAction);
 
-    m_helpMenu->addAction(m_aboutAction);
-    m_helpMenu->addAction(m_offlineManualAction);
-    m_helpMenu->addSeparator();
-    m_helpMenu->addAction(m_aboutQtAction);
+m_helpMenu->addAction(m_supportProjectAction);
+m_helpMenu->addSeparator();
+m_helpMenu->addAction(m_getHelpAction);
+m_helpMenu->addAction(m_offlineManualAction);
+m_helpMenu->addSeparator();
+m_helpMenu->addAction(m_aboutAction);
+m_helpMenu->addAction(m_aboutQtAction);
     
     // Панель инструментов
     m_playbackToolBar->addAction(m_playAction);
@@ -231,18 +259,26 @@ MainWindow::MainWindow(QWidget *parent)
     m_soundTableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
     m_soundTableWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     
-    // Строка состояния
-    m_headphonesButton->setText("H");
+    // Строка состояния - using Phosphor icons
+    m_headphonesButton->setIcon(loadSvgIcon(":/icons/headphones.svg", QSize(20, 20)));
     m_headphonesButton->setCheckable(true);
     m_headphonesButton->setChecked(true);
     m_headphonesButton->setToolTip(tr("Output to headphones"));
-    m_allButton->setText("A");
+    m_headphonesButton->setAutoRaise(true);
+    m_headphonesButton->setText("");
+
+    m_allButton->setIcon(loadSvgIcon(":/icons/microphone.svg", QSize(20, 20)));
     m_allButton->setCheckable(true);
     m_allButton->setChecked(true);
     m_allButton->setToolTip(tr("Output to all (mic)"));
-    m_repeatButton->setText(QString::fromUtf8("↻"));
+    m_allButton->setAutoRaise(true);
+    m_allButton->setText("");
+
+    m_repeatButton->setIcon(loadSvgIcon(":/icons/repeat.svg", QSize(20, 20)));
     m_repeatButton->setCheckable(true);
     m_repeatButton->setToolTip(tr("Repeat playback"));
+    m_repeatButton->setAutoRaise(true);
+    m_repeatButton->setText("");
 
     statusBar()->addWidget(m_headphonesButton);
     statusBar()->addWidget(m_allButton);
@@ -260,10 +296,20 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_importAction, &QAction::triggered, this, &MainWindow::onImportTriggered);
     connect(m_saveAction, &QAction::triggered, this, &MainWindow::onSaveTriggered);
     connect(m_saveAsAction, &QAction::triggered, this, &MainWindow::onSaveAsTriggered);
-    connect(m_settingsAction, &QAction::triggered, this, &MainWindow::onSettingsClicked);
-    connect(m_aboutAction, &QAction::triggered, this, &MainWindow::onAboutClicked);
-    connect(m_offlineManualAction, &QAction::triggered, this, &MainWindow::onOfflineManualClicked);
-    connect(m_aboutQtAction, &QAction::triggered, qApp, &QApplication::aboutQt);
+connect(m_settingsAction, &QAction::triggered, this, &MainWindow::onSettingsClicked);
+connect(m_getHelpAction, &QAction::triggered, this, &MainWindow::onGetHelpClicked);
+connect(m_aboutAction, &QAction::triggered, this, &MainWindow::onAboutClicked);
+connect(m_supportProjectAction, &QAction::triggered, this, &MainWindow::onSupportProjectClicked);
+connect(m_offlineManualAction, &QAction::triggered, this, &MainWindow::onOfflineManualClicked);
+connect(m_aboutQtAction, &QAction::triggered, qApp, &QApplication::aboutQt);
+
+    // Connect settings signals for immediate theme application
+    Settings* settings = Settings::instance();
+    connect(settings, &Settings::themeChanged, this, &MainWindow::onSettingsThemeChanged);
+    
+    // We don't need the metaDataReader anymore since we use miniaudio for duration
+    // But keep it for compatibility if needed
+    // delete m_metaDataReader; // Uncomment if you want to remove it completely
 
     // Меню Window
     connect(m_minimizeAction, &QAction::triggered, this, &MainWindow::showMinimized);
@@ -326,24 +372,46 @@ void MainWindow::dropEvent(QDropEvent *event)
 
 void MainWindow::addSoundFile(const QString& filePath)
 {
+    // Check if file format is supported
+    QFileInfo fileInfo(filePath);
+    QString extension = fileInfo.suffix().toLower();
+    QStringList supportedFormats = {"mp3", "wav", "flac", "ogg"};
+    
+    if (!supportedFormats.contains(extension)) {
+        // Show warning about unsupported format
+        QMessageBox::warning(this, tr("Unsupported Format"), 
+            tr("The file '%1' has an unsupported format (.%2).\n\n"
+               "Supported formats: MP3, WAV, FLAC, OGG\n\n"
+               "To use this file, please convert it to a supported format first.").arg(fileInfo.fileName()).arg(extension));
+        return;
+    }
+    
     const int newRow = m_soundTableWidget->rowCount();
     m_soundTableWidget->insertRow(newRow);
 
-    QFileInfo fileInfo(filePath);
     QTableWidgetItem *tagItem = new QTableWidgetItem(fileInfo.fileName());
     tagItem->setData(Qt::UserRole, filePath);
-    
-    QTableWidgetItem *durationItem = new QTableWidgetItem(tr("Loading..."));
+
+    // Get duration using miniaudio instead of QMediaPlayer
+    qint64 durationMs = AudioEngine::getAudioFileDuration(filePath);
+    QTableWidgetItem *durationItem;
+    if (durationMs > 0) {
+        int seconds = durationMs / 1000;
+        int minutes = seconds / 60;
+        seconds %= 60;
+        durationItem = new QTableWidgetItem(QString("%1:%2").arg(minutes).arg(seconds, 2, 10, QChar('0')));
+    } else {
+        durationItem = new QTableWidgetItem(tr("Unknown"));
+    }
+
     QTableWidgetItem *hotkeyItem = new QTableWidgetItem("None");
 
     m_soundTableWidget->setItem(newRow, 1, tagItem);
     m_soundTableWidget->setItem(newRow, 2, durationItem);
     m_soundTableWidget->setItem(newRow, 3, hotkeyItem);
 
-    m_metaDataReader->setSource(QUrl::fromLocalFile(filePath));
-
     updateIndexes();
-    qDebug() << "Added sound:" << filePath;
+    qDebug() << "Added sound:" << filePath << "Duration:" << durationMs << "ms";
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -419,6 +487,13 @@ void MainWindow::onSettingsClicked()
 {
     SettingsDialog dialog(this);
     dialog.exec();
+    
+    // Settings are applied immediately via signals/slots
+    // Check if restart is needed
+    if (dialog.needsRestart()) {
+        // Restart will be handled by the exit code in main.cpp
+        QApplication::exit(100);
+    }
 }
 
 void MainWindow::onNewTriggered()
@@ -604,7 +679,12 @@ void MainWindow::onImportTriggered()
         this,
         tr("Import Audio Files"),
         libraryPath,
-        tr("Audio Files (*.mp3 *.wav *.flac *.ogg)"));
+        tr("Audio Files (*.mp3 *.wav *.flac *.ogg);;"
+           "MP3 (*.mp3);;"
+           "WAV (*.wav);;"
+           "FLAC (*.flac);;"
+           "OGG Vorbis (*.ogg);;"
+           "All Files (*)"));
 
     for (const QString &fileName : fileNames) {
         if (!fileName.isEmpty()) {
@@ -658,6 +738,26 @@ void MainWindow::savePlaylist(const QString& fileName)
 void MainWindow::onOfflineManualClicked()
 {
     QMessageBox::information(this, tr("Offline Manual"), tr("This feature is not implemented yet."));
+}
+
+void MainWindow::onGetHelpClicked()
+{
+    HelpDialog dialog(this);
+    dialog.exec();
+}
+
+void MainWindow::onSupportProjectClicked()
+{
+    SupportDialog dialog(this);
+    dialog.exec();
+}
+
+void MainWindow::onSettingsThemeChanged(ThemeMode theme)
+{
+    Q_UNUSED(theme)
+    // Theme changes will be applied on next dialog open
+    // or we could reload the stylesheet here
+    // For now, we notify the user that restart might be needed for full effect
 }
 
 void MainWindow::onKeepOnTopToggled(bool checked)
@@ -792,10 +892,10 @@ void MainWindow::onProgressSliderMoved(int position)
 
 void MainWindow::onHeadphonesVolumeChanged(int value)
 {
-    // Конвертируем значение слайдера (0-99) в громкость (0.0-1.0)
-    float volume = static_cast<float>(value) / 100.0f;
-    m_audioEngine->setMonitoringVolume(volume);
-    updateHeadphonesVolumeIcon(value);
+// Конвертируем значение слайдера (0-99) в громкость (0.0-1.0)
+float volume = static_cast<float>(value) / 100.0f;
+m_audioEngine->setMonitorVolume(volume);
+updateHeadphonesVolumeIcon(value);
 
     // Если звук не выключен, сохраняем текущее значение
     if (value > 0) {
@@ -805,13 +905,15 @@ void MainWindow::onHeadphonesVolumeChanged(int value)
 
 void MainWindow::onMicVolumeChanged(int value)
 {
-    // TODO: Реализовать громкость для микса в AudioEngine
-    qDebug() << "Mic volume changed to:" << value;
-    updateMicVolumeIcon(value);
+// Устанавливаем громкость микрофона в AudioEngine
+float volume = static_cast<float>(value) / 100.0f;
+m_audioEngine->setMicVolume(volume);
+qDebug() << "Mic volume changed to:" << value;
+updateMicVolumeIcon(value);
 
-    if (value > 0) {
-        m_micVolume = value;
-    }
+if (value > 0) {
+m_micVolume = value;
+}
 }
 
 void MainWindow::onHeadphonesMuteClicked(bool checked)
@@ -834,22 +936,42 @@ void MainWindow::onMicMuteClicked(bool checked)
 
 void MainWindow::updateHeadphonesVolumeIcon(int value)
 {
+    // Helper lambda to load SVG icons
+    auto loadSvgIcon = [](const QString& path, const QSize& size = QSize(20, 20)) -> QIcon {
+        QSvgRenderer renderer(path);
+        QPixmap pixmap(size);
+        pixmap.fill(Qt::transparent);
+        QPainter painter(&pixmap);
+        renderer.render(&painter);
+        return QIcon(pixmap);
+    };
+
     if (value == 0) {
-        m_headphonesMuteButton->setIcon(QIcon(":/icons/headphones-off.png"));
+        m_headphonesMuteButton->setIcon(loadSvgIcon(":/icons/headphones-slash.svg", QSize(20, 20)));
         m_headphonesMuteButton->setChecked(true);
     } else {
-        m_headphonesMuteButton->setIcon(QIcon(":/icons/headphones.png"));
+        m_headphonesMuteButton->setIcon(loadSvgIcon(":/icons/headphones.svg", QSize(20, 20)));
         m_headphonesMuteButton->setChecked(false);
     }
 }
 
 void MainWindow::updateMicVolumeIcon(int value)
 {
+    // Helper lambda to load SVG icons
+    auto loadSvgIcon = [](const QString& path, const QSize& size = QSize(20, 20)) -> QIcon {
+        QSvgRenderer renderer(path);
+        QPixmap pixmap(size);
+        pixmap.fill(Qt::transparent);
+        QPainter painter(&pixmap);
+        renderer.render(&painter);
+        return QIcon(pixmap);
+    };
+
     if (value == 0) {
-        m_micMuteButton->setIcon(QIcon(":/icons/microphone-off.png"));
+        m_micMuteButton->setIcon(loadSvgIcon(":/icons/microphone-slash.svg", QSize(20, 20)));
         m_micMuteButton->setChecked(true);
     } else {
-        m_micMuteButton->setIcon(QIcon(":/icons/microphone.png"));
+        m_micMuteButton->setIcon(loadSvgIcon(":/icons/microphone.svg", QSize(20, 20)));
         m_micMuteButton->setChecked(false);
     }
 }
@@ -915,7 +1037,46 @@ void MainWindow::onAssignHotkey()
 
 QString MainWindow::getLibraryPath() const
 {
-    QSettings settings("kkrugley", "OpenSoundDeck");
-    QString defaultPath = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
-    return settings.value("library/path", defaultPath).toString();
+    return Settings::instance()->libraryPath();
+}
+
+void MainWindow::onAudioError(const QString& message)
+{
+    QMessageBox::warning(this, tr("Audio Error"), message);
+}
+
+void MainWindow::checkVirtualAudioSetup()
+{
+    qDebug() << "[VIRTUAL AUDIO] Checking if required...";
+    // Check virtual audio setup after window is shown
+    if (VirtualAudioSetupDialog::isVirtualAudioRequired()) {
+        qDebug() << "[VIRTUAL AUDIO] Setup required, showing dialog...";
+        QSettings settings;
+        bool setupSkipped = settings.value("virtualAudioSetupSkipped", false).toBool();
+        qDebug() << "[VIRTUAL AUDIO] Skipped from settings:" << setupSkipped;
+
+        if (!setupSkipped) {
+            qDebug() << "[VIRTUAL AUDIO] Creating dialog...";
+            VirtualAudioSetupDialog setupDialog(this);
+            qDebug() << "[VIRTUAL AUDIO] Executing dialog...";
+            if (setupDialog.exec() == QDialog::Rejected) {
+                qWarning() << "Virtual audio setup was skipped. Microphone injection will not work.";
+            }
+            qDebug() << "[VIRTUAL AUDIO] Dialog closed";
+        }
+    } else {
+        qDebug() << "[VIRTUAL AUDIO] Setup NOT required (Linux or already configured)";
+    }
+}
+
+void MainWindow::showEvent(QShowEvent *event)
+{
+    QMainWindow::showEvent(event);
+    // Check virtual audio setup on first show
+    static bool firstShow = true;
+    if (firstShow) {
+        firstShow = false;
+        // Use timer to delay dialog until window is fully shown
+        QTimer::singleShot(100, this, &MainWindow::checkVirtualAudioSetup);
+    }
 }

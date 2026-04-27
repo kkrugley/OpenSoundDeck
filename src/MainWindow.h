@@ -23,6 +23,7 @@
 #include <QMainWindow>
 #include <QKeyEvent>
 #include "AudioEngine.h"
+#include "Settings.h"
 
 class GlobalHotkeyManager;
 class QTableWidget;
@@ -81,17 +82,22 @@ private slots:
     void onDurationChanged(qint64 duration);
     void onHeadphonesMuteClicked(bool checked);
     void onMicMuteClicked(bool checked);
-    void onAboutClicked();
-    void onKeepOnTopToggled(bool checked);
-    void onOfflineManualClicked();
+void onAboutClicked();
+void onGetHelpClicked();
+void onKeepOnTopToggled(bool checked);
+void onOfflineManualClicked();
+void onSupportProjectClicked();
     void onPlaybackFinished();
     void onPositionChanged(ma_uint64 position);
+    void onAudioError(const QString& message);
+    void onSettingsThemeChanged(ThemeMode theme);
 
 
 protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void showEvent(QShowEvent *event) override;
 
 private:
     void updateIndexes();
@@ -102,6 +108,7 @@ private:
     QString getLibraryPath() const;
     void updateHeadphonesVolumeIcon(int value);
     void updateMicVolumeIcon(int value);
+    void checkVirtualAudioSetup();
     bool m_isRepeatEnabled;
 
     // System Menu
@@ -160,7 +167,9 @@ private:
     // 
     
     // Help Actions
+    QAction *m_getHelpAction;
     QAction *m_aboutAction;
+    QAction *m_supportProjectAction;
     QAction *m_offlineManualAction;
     QAction *m_aboutQtAction;
 

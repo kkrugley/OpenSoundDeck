@@ -2,14 +2,18 @@
 /build-*/
 /bin/
 /lib/
+.qtcreator/
 *.o
 *.a
 *.so
 *.dll
 *.rtf
+*.bat
+
 
 /.vscode/
-
+AGENTS.md
+CLAUDE.md
 
 CMakeCache.txt
 CMakeFiles/
