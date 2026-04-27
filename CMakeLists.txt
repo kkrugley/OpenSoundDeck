@@ -105,7 +105,6 @@ endif()
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories(third_party/miniaudio)
@@ -116,6 +115,8 @@ if (UNIX AND NOT APPLE)
     pkg_check_modules(ALSA REQUIRED alsa)
     pkg_check_modules(LIBPULSE REQUIRED libpulse)
     find_package(X11 REQUIRED)
+    # Qt6 DBus for Wayland portal support (optional - will be used if available)
+    find_package(Qt6 OPTIONAL_COMPONENTS DBus)
 
     include_directories(${ALSA_INCLUDE_DIRS})
     include_directories(${LIBPULSE_INCLUDE_DIRS})
@@ -180,6 +181,13 @@ if (UNIX AND NOT APPLE)
         ${X11_LIBRARIES}
         pthread
     )
+    if(Qt6DBus_FOUND)
+        target_link_libraries(OpenSoundDeck PRIVATE Qt6::DBus)
+        target_compile_definitions(OpenSoundDeck PRIVATE USE_DBUS_PORTAL)
+        message(STATUS "Qt6::DBus found - Wayland portal support enabled")
+    else()
+        message(STATUS "Qt6::DBus not found - Wayland portal support disabled")
+    endif()
 endif()
 
 if(APPLE)
