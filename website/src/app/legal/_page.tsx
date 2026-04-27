@@ -184,8 +184,8 @@ export default function LegalPage() {
                           License
                         </h3>
                         <p className="mt-2">
-                          OpenSoundDeck is licensed under the MIT License. You are free to use, 
-                          modify, and distribute the software according to the terms of that license. 
+                          OpenSoundDeck is licensed under the GPL-3.0 license. You are free to use,
+                          modify, and distribute the software according to the terms of that license.
                           The software is provided &quot;as is&quot;, without warranty of any kind.
                         </p>
                       </section>
@@ -229,10 +229,10 @@ export default function LegalPage() {
                           Contributions
                         </h3>
                         <p className="mt-2">
-                          By contributing to OpenSoundDeck, you agree that your contributions 
-                          will be licensed under the same MIT License as the project. You retain 
-                          copyright to your contributions, but grant us and all users the rights 
-                          to use them under the MIT License terms.
+                          By contributing to OpenSoundDeck, you agree that your contributions
+                          will be licensed under the same GPL-3.0 license as the project. You retain
+                          copyright to your contributions, but grant us and all users the rights
+                          to use them under the GPL-3.0 license terms.
                         </p>
                       </section>
 
@@ -265,37 +265,35 @@ export default function LegalPage() {
                   <div className="space-y-8">
                     <div>
                       <h2 className="text-2xl font-bold text-[var(--text-primary)]">
-                        MIT License
+                        GPL-3.0 License
                       </h2>
                       <p className="mt-4 text-[var(--text-secondary)]">
-                        OpenSoundDeck is released under the MIT License, one of the most 
-                        permissive and widely-used open source licenses.
+                        OpenSoundDeck is released under the GPL-3.0 license.
+                        <a href={`${GITHUB_URL}/blob/main/LICENSE`} target="_blank" rel="noopener noreferrer" className="text-[var(--text-primary)] underline">
+                          {' '}View the full license on GitHub
+                        </a>.
                       </p>
                     </div>
 
                     <div className="rounded-lg border border-[var(--border)] bg-[var(--code-bg)] p-6">
                       <pre className="whitespace-pre-wrap text-sm text-[var(--text-primary)]">
-{`MIT License
+{`GNU GENERAL PUBLIC LICENSE
+Version 3, 29 June 2007
 
 Copyright (c) ${new Date().getFullYear()} OpenSoundDeck Contributors
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.`}
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.`}
                       </pre>
                     </div>
 
@@ -308,8 +306,9 @@ SOFTWARE.`}
                           <li>You can use OpenSoundDeck for personal or commercial purposes</li>
                           <li>You can modify the source code</li>
                           <li>You can distribute your modifications</li>
-                          <li>You can include it in proprietary software</li>
                           <li>You must include the copyright notice and license</li>
+                          <li>Any derivative works must also be licensed under GPL-3.0</li>
+                          <li>You cannot include it in proprietary/closed-source software</li>
                         </ul>
                       </section>
 

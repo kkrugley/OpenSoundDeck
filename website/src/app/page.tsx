@@ -7,7 +7,7 @@ const ogImage = buildOgUrl({
   title: 'The Open Source Soundboard',
   description:
     'Inject audio directly into your microphone with global hotkeys. Cross-platform, free, and built for streamers and gamers.',
-  tags: ['Open Source', 'Cross-Platform', 'C++20 Native', 'MIT License'],
+  tags: ['Open Source', 'Cross-Platform', 'C++20 Native', 'GPL-3.0 License'],
 });
 
 export const metadata: Metadata = {

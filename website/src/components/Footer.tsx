@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { GithubLogo, DiscordLogo, XLogo } from '@phosphor-icons/react';
+import { GithubLogo } from '@phosphor-icons/react';
 import { GITHUB_URL, LANGUAGES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
@@ -52,24 +52,6 @@ export function Footer({ currentLang, onLanguageChange }: FooterProps) {
                 >
                   <GithubLogo className="h-4 w-4" weight="bold" />
                   GitHub
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="https://discord.gg/opensounddeck"
-                  className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                >
-                  <DiscordLogo className="h-4 w-4" weight="bold" />
-                  Discord
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="https://x.com/opensounddeck"
-                  className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                >
-                  <XLogo className="h-4 w-4" weight="bold" />
-                  X
                 </Link>
               </li>
             </ul>

@@ -15,7 +15,7 @@
     "banner": "OpenSoundDeck is now available on Linux, Windows, and macOS.",
     "downloadNow": "Download now",
     "title": "The open source soundboard",
-    "tagline": "Inject audio directly into your microphone with global hotkeys. Cross-platform, free, and built for streamers and gamers.",
+    "tagline": "Play sounds in voice chats. Cross-platform, free, and built for streamers and gamers. Try it out now!",
     "tabs": {
       "curl": "curl",
       "git": "git",
@@ -92,7 +92,7 @@
       },
       "free": {
         "question": "Is it free to use?",
-        "answer": "Yes! OpenSoundDeck is completely free and open-source under the MIT License. No ads, no paywalls, just pure functionality."
+        "answer": "Yes! OpenSoundDeck is completely free and open-source under the GPL-3.0 license. No ads, no paywalls, just pure functionality."
       },
       "discord": {
         "question": "Can I use it with Discord/Zoom/Teams?",
@@ -129,7 +129,7 @@
     "docs": "Docs",
     "legal": "Legal",
     "language": "Language",
-    "copyright": "© {year} OpenSoundDeck. All rights reserved.",
+    "copyright": "© {{year}} OpenSoundDeck. All rights reserved.",
     "builtWith": "Built with passion and open source."
   },
   "help": {
@@ -324,7 +324,7 @@
       },
       "license": {
         "title": "License",
-        "content": "OpenSoundDeck is licensed under the MIT License. You are free to use, modify, and distribute the software according to the terms of that license. The software is provided 'as is', without warranty of any kind."
+        "content": "OpenSoundDeck is licensed under the GPL-3.0 license. You are free to use, modify, and distribute the software according to the terms of that license. The software is provided 'as is', without warranty of any kind."
       },
       "responsible": {
         "title": "Use Responsibly",
@@ -340,7 +340,7 @@
       },
       "contributions": {
         "title": "Contributions",
-        "content": "By contributing to OpenSoundDeck, you agree that your contributions will be licensed under the same MIT License as the project. You retain copyright to your contributions, but grant us and all users the rights to use them under the MIT License terms."
+        "content": "By contributing to OpenSoundDeck, you agree that your contributions will be licensed under the same GPL-3.0 license as the project. You retain copyright to your contributions, but grant us and all users the rights to use them under the GPL-3.0 license terms."
       },
       "changes": {
         "title": "Changes to Terms",
@@ -352,15 +352,15 @@
       }
     },
     "licenseSection": {
-      "title": "MIT License",
+      "title": "GPL-3.0 License",
       "whatItMeans": {
         "title": "What This Means",
         "items": [
           "You can use OpenSoundDeck for personal or commercial purposes",
           "You can modify the source code",
           "You can distribute your modifications",
-          "You can include it in proprietary software",
-          "You must include the copyright notice and license"
+          "You must include the copyright notice and license",
+          "Any modifications or derivative works must also be GPL-3.0 licensed"
         ]
       },
       "thirdParty": {

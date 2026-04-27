@@ -4,70 +4,56 @@ Cross-platform, open-source soundboard for voice chats and streams. Inject high-
 
 ---
 
-## ✨ What is OpenSoundDeck?
+## What is OpenSoundDeck?
 
-OpenSoundDeck is a free and open-source application that allows you to play sounds through your microphone input for others to hear. Whether you're gaming with friends, live-streaming, or on a conference call, you can play sound effects, music, or clips at the press of a button.
+OpenSoundDeck lets you play sounds through your microphone. When you hit a hotkey, a sound file gets mixed into your mic input—so Discord, Zoom, Teams, or any game hears it coming from you. No setup needed beyond telling the app which audio devices to use.
 
-This project was born out of a love for tools like Soundpad but with a desire for a solution that is **truly cross-platform (Linux, Windows, macOS)** and built by the community, for the community. No ads, no paywalls, just pure functionality.
+It started as a frustrated attempt to replace Soundpad on Linux. Most soundboards lock you into one OS or ask for money. This one works everywhere and costs nothing.
 
-## 🚀 Core Features
+## Features
 
-*   🎤 **Mic Injection:** Plays audio files so they sound like they're coming from your microphone.
-*   ⌨️ **Global Hotkeys:** Assign system-wide hotkeys to your favorite sounds so you can trigger them from anywhere, even inside a game.
-*   🖥️ **Cross-Platform:** A single native application that runs on Linux, Windows, and macOS.
-*   🎧 **Sound & Mic Mixing:** Your voice and the played audio are mixed together seamlessly. Your friends will still hear you speak!
-*   🎛️ **Simple UI:** An easy-to-use interface to manage your sound library and configure devices.
-*   ❤️ **100% Free & Open-Source:** Built with transparency and a passion for great software.
+- **Mic injection** — audio plays through your microphone so others hear it naturally
+- **Global hotkeys** — trigger sounds from anywhere, even inside games
+- **Cross-platform** — Linux, Windows, macOS all work the same way
+- **Low latency** — written in C++20 with minimal audio delay
+- **Simple to use** — drag audio files in, assign hotkeys, done
+- **100% free and open source** — no ads, no licensing nonsense
 
-## 🌱 Why Another Soundboard?
+## Why another soundboard?
 
-We believe essential tools should be accessible to everyone, regardless of their operating system. OpenSoundDeck is built on these principles:
+Most soundboards only work on Windows. The open-source ones are scattered and often unmaintained. We wanted something that:
 
-*   **Community-Driven:** The future of this project is in the hands of its users. Every feature request, bug report, and contribution matters.
-*   **Transparency:** All code is open for review. You know exactly what's running on your machine.
-*   **Performance:** Written in C++ with the Qt framework for a responsive, native experience with minimal latency.
-*   **Freedom:** Free as in "free speech" and free as in "free beer."
+- Runs natively on Linux, Windows, and macOS without workarounds
+- Doesn't phone home or track what you're doing
+- Has code you can read and modify
+- Stays simple—no bloat, no upsells
 
-## 🚧 Project Status
+## Project Status
 
-This project is currently in **active development**. While the core functionality is being built, we are looking for passionate people to help us shape the future of OpenSoundDeck. Check the [Projects](https://github.com/kkrugley/OpenSoundDeck/projects) tab to see our roadmap!
+OpenSoundDeck is in active development. The core is working—you can use it now—but we're still adding features and fixing edge cases. See the [GitHub Projects tab](https://github.com/kkrugley/OpenSoundDeck/projects) for what's in progress.
 
-## 📦 Getting Started
+## Getting Started
 
-*Final installation packages are not yet available. Here is the intended plan:*
+**Note:** No binary releases yet. You have to build from source.
 
-### For Users
-*   **Linux**: We will provide an `AppImage` for easy, no-install usage, and a `Flatpak` for seamless integration with your desktop environment.
-*   **Windows**: A standard `.msi` installer will be available.
-*   **macOS**: A `.dmg` file that you can drag and drop into your Applications folder.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/kkrugley/OpenSoundDeck.git
+   ```
+2. Follow the [build instructions in BUILDING.md](BUILDING.md).
 
-### For Developers
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/kkrugley/OpenSoundDeck.git
-    ```
-2.  Follow the build instructions in `BUILDING.md` (coming soon).
+## Contributing
 
-## ❤️ How to Contribute
+We need help. Code contributions are great, but so are bug reports, documentation fixes, and translations. Start by checking [existing issues](https://github.com/kkrugley/OpenSoundDeck/issues) or opening a new one.
 
-**This is where you come in!** OpenSoundDeck can only succeed with your help. We welcome contributions of all kinds, not just code.
+## Built With
 
-*   💡 **Suggest a Feature:** Have a great idea? Open an [issue](https://github.com/kkrugley/OpenSoundDeck/issues) and tell us about it!
-*   🐛 **Report a Bug:** If you find something that isn't working right, letting us know is one of the most helpful things you can do.
-*   ✍️ **Write Code:** Grab an open issue, fork the repo, and submit a pull request. Whether it's a small fix or a major new feature, all contributions are valued.
-*   📚 **Improve Documentation:** Help us make our README and other documentation clearer and more helpful.
-*   🌐 **Translate the App:** Help make OpenSoundDeck accessible to people all over the world.
+- **C++20** — core logic
+- **Qt 6** — GUI framework
+- **CMake** — build system
+- **Miniaudio** — cross-platform audio library
+- **GitHub Actions** — CI/CD
 
-Please read our `CONTRIBUTING.md` (coming soon) for guidelines and best practices.
+## License
 
-## 🛠️ Technology Stack
-
-*   **Core Logic:** C++20
-*   **GUI Framework:** Qt 6
-*   **Build System:** CMake
-*   **Audio Backend:** Miniaudio (a fantastic cross-platform audio library)
-*   **CI/CD:** GitHub Actions
-
-## 📄 License
-
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details. You are free to use, modify, and distribute this software.
+GPL-3.0. See [LICENSE](LICENSE).

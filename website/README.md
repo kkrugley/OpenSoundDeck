@@ -119,4 +119,4 @@ Based on the OpenCode.ai design:
 
 ## License
 
-This website is part of the OpenSoundDeck project and is licensed under the MIT License.
+This website is part of the OpenSoundDeck project and is licensed under the GPL-3.0 license. See [LICENSE](https://github.com/kkrugley/OpenSoundDeck/blob/main/LICENSE) for details.

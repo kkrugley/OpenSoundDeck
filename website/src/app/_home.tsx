@@ -6,8 +6,6 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Hero } from '@/components/Hero';
 import { Features } from '@/components/Features';
-import { Statistics } from '@/components/Statistics';
-import { Privacy } from '@/components/Privacy';
 import { FAQ } from '@/components/FAQ';
 import { SoundEngine } from '@/components/SoundEngine';
 
@@ -46,8 +44,6 @@ export default function Home() {
       <main className="flex-1">
         <Hero />
         <Features />
-        <Statistics />
-        <Privacy />
         <FAQ />
         <SoundEngine />
       </main>

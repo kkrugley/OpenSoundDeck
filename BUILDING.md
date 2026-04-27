@@ -2,7 +2,9 @@
 
 This guide covers building OpenSoundDeck on all supported platforms. The project uses **CMake** and **Qt6**.
 
-**⚠️ Critical:** Active development is on the `dev` branch. `main` contains release-only code. Always build from `dev` for development.
+**⚠️ Important:** Binary releases are not yet available. You must build OpenSoundDeck from source to use it.
+
+**⚠️ Development:** Active development is on the `dev` branch. `main` contains release-only code. Always build from `dev` for development.
 
 ---
 

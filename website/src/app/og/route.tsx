@@ -250,7 +250,7 @@ export async function GET(request: Request) {
               </div>
             ))}
             <div style={{ flex: 1 }} />
-            {/* MIT badge */}
+            {/* GPL-3.0 badge */}
             <div
               style={{
                 display: 'flex',
@@ -265,7 +265,7 @@ export async function GET(request: Request) {
                 fontWeight: 600,
               }}
             >
-              MIT License
+              GPL-3.0 License
             </div>
           </div>
         </div>

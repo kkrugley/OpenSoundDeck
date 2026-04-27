@@ -8,14 +8,14 @@ import { INSTALL_COMMANDS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
 const TABS = [
-  { id: 'curl', label: 'curl', disabled: false },
   { id: 'git', label: 'git', disabled: false },
+  { id: 'curl', label: 'curl', disabled: true },
   { id: 'brew', label: 'brew', disabled: true },
   { id: 'choco', label: 'choco', disabled: true },
 ] as const;
 
 export function Hero() {
-  const [activeTab, setActiveTab] = useState<'curl' | 'git' | 'brew' | 'choco'>('curl');
+  const [activeTab, setActiveTab] = useState<'curl' | 'git' | 'brew' | 'choco'>('git');
   const [copied, setCopied] = useState(false);
   const { t } = useTranslation('translation');
 
@@ -41,24 +41,6 @@ export function Hero() {
   return (
     <section className="w-full py-16 sm:py-24 lg:py-32">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        {/* Alert Banner */}
-        <div className="mb-8 rounded-md border-l-4 border-[var(--success)] bg-[var(--code-bg)] p-4">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-            <span className="inline-flex items-center rounded-full bg-[var(--accent-dark)] px-2 py-0.5 text-xs font-medium text-[var(--accent-light)]">
-              {t('hero.badge')}
-            </span>
-            <p className="text-sm text-[var(--text-secondary)]">
-              {t('hero.banner')}{" "}
-              <Link 
-                href="/download" 
-                className="inline-flex items-center gap-1 font-medium text-[var(--text-primary)] underline hover:no-underline"
-              >
-                {t('hero.downloadNow')} <ArrowRight className="h-3 w-3" />
-              </Link>
-            </p>
-          </div>
-        </div>
-
         {/* Main Heading */}
         <h1 className="text-center text-4xl font-bold leading-tight text-[var(--text-primary)] sm:text-5xl lg:text-6xl">
           {t('hero.title')}

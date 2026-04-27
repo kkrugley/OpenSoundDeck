@@ -228,7 +228,38 @@ export default function DocsPage() {
                       Installation
                     </h1>
                     <p className="mt-4 text-[var(--text-secondary)]">
-                      Choose your platform below to see installation instructions.
+                      OpenSoundDeck does not have binary releases yet. You need to build it from source.
+                      Don't worry—the process is straightforward, even if you've never compiled software before.
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-[var(--border)] bg-[var(--code-bg)] p-6">
+                    <h2 className="text-lg font-bold text-[var(--text-primary)]">
+                      Before You Start
+                    </h2>
+                    <p className="mt-3 text-[var(--text-secondary)]">
+                      You'll need:
+                    </p>
+                    <ul className="mt-4 space-y-2 text-sm text-[var(--text-secondary)]">
+                      <li className="flex items-start gap-2">
+                        <span className="text-[var(--success)]">✓</span>
+                        <span><strong>Git</strong> — to clone the repository</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[var(--success)]">✓</span>
+                        <span><strong>CMake 3.16+</strong> — the build system</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[var(--success)]">✓</span>
+                        <span><strong>C++ compiler</strong> with C++20 support (GCC 10+, Clang 12+, MSVC 2019+)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[var(--success)]">✓</span>
+                        <span><strong>Qt6</strong> — the GUI framework (specific components listed below)</span>
+                      </li>
+                    </ul>
+                    <p className="mt-4 text-xs text-[var(--text-tertiary)]">
+                      Each platform has its own setup steps. Follow the instructions for your OS below.
                     </p>
                   </div>
 
@@ -277,41 +308,125 @@ export default function DocsPage() {
 
                   {/* Platform-specific notes */}
                   {activePlatform === 'linux' && (
-                    <div className="rounded-lg border border-[var(--border)] bg-[var(--code-bg)] p-6">
-                      <h3 className="font-bold text-[var(--text-primary)]">Linux Notes</h3>
-                      <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                        No virtual audio driver is needed on Linux. OpenSoundDeck automatically 
-                        creates virtual sinks via PulseAudio or PipeWire.
-                      </p>
+                    <div className="space-y-4">
+                      <div className="rounded-lg border border-[var(--border)] bg-[var(--code-bg)] p-6">
+                        <h3 className="font-bold text-[var(--text-primary)]">Linux Notes</h3>
+                        <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                          No virtual audio driver is needed on Linux. OpenSoundDeck automatically
+                          creates virtual sinks via PulseAudio or PipeWire.
+                        </p>
+                      </div>
+
+                      <div className="rounded-lg border border-[var(--border)] bg-[var(--code-bg)] p-6">
+                        <h3 className="font-bold text-[var(--text-primary)]">Step-by-Step</h3>
+                        <ol className="mt-4 list-inside list-decimal space-y-2 text-sm text-[var(--text-secondary)]">
+                          <li>Install the dependencies using apt (copy the commands above)</li>
+                          <li>Clone the repository: <code className="bg-[var(--background)] px-1">git clone https://github.com/kkrugley/OpenSoundDeck.git</code></li>
+                          <li>Navigate to the directory: <code className="bg-[var(--background)] px-1">cd OpenSoundDeck</code></li>
+                          <li>Switch to dev branch: <code className="bg-[var(--background)] px-1">git checkout dev</code></li>
+                          <li>Create a build directory: <code className="bg-[var(--background)] px-1">mkdir build && cd build</code></li>
+                          <li>Run CMake: <code className="bg-[var(--background)] px-1">cmake ..</code></li>
+                          <li>Build the project: <code className="bg-[var(--background)] px-1">cmake --build . --config Release</code></li>
+                          <li>Run the app: <code className="bg-[var(--background)] px-1">./OpenSoundDeck</code></li>
+                        </ol>
+                      </div>
                     </div>
                   )}
 
                   {activePlatform === 'windows' && (
-                    <div className="rounded-lg border border-[var(--border)] bg-[var(--code-bg)] p-6">
-                      <h3 className="font-bold text-[var(--text-primary)]">Windows Requirements</h3>
-                      <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                        You must install VB-Audio Virtual Cable before running OpenSoundDeck:
-                      </p>
-                      <ol className="mt-2 list-inside list-decimal text-sm text-[var(--text-secondary)]">
-                        <li>Download from <a href="https://vb-audio.com/Cable/" target="_blank" rel="noopener noreferrer" className="underline">vb-audio.com</a></li>
-                        <li>Run VBCABLE_Setup.exe</li>
-                        <li>Reboot your system</li>
-                      </ol>
+                    <div className="space-y-4">
+                      <div className="rounded-lg border border-[var(--border)] bg-[var(--code-bg)] p-6">
+                        <h3 className="font-bold text-[var(--text-primary)]">Windows Requirements</h3>
+                        <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                          Before building, install:
+                        </p>
+                        <ul className="mt-4 space-y-2 text-sm text-[var(--text-secondary)]">
+                          <li>
+                            <strong>Visual Studio 2019 or later</strong> — Download the Community edition from
+                            <a href="https://visualstudio.microsoft.com/" target="_blank" rel="noopener noreferrer" className="ml-1 underline">visualstudio.microsoft.com</a>
+                          </li>
+                          <li>
+                            <strong>CMake 3.16+</strong> — Get it from
+                            <a href="https://cmake.org/download/" target="_blank" rel="noopener noreferrer" className="ml-1 underline">cmake.org</a>
+                          </li>
+                          <li>
+                            <strong>Qt6</strong> — Download the Qt Online Installer from
+                            <a href="https://www.qt.io/download-qt-installer" target="_blank" rel="noopener noreferrer" className="ml-1 underline">qt.io</a>
+                          </li>
+                          <li>
+                            <strong>VB-Audio Virtual Cable</strong> — Essential for OpenSoundDeck to work. Download from
+                            <a href="https://vb-audio.com/Cable/" target="_blank" rel="noopener noreferrer" className="ml-1 underline">vb-audio.com</a>, run the installer, and reboot.
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div className="rounded-lg border border-[var(--border)] bg-[var(--code-bg)] p-6">
+                        <h3 className="font-bold text-[var(--text-primary)]">Step-by-Step</h3>
+                        <ol className="mt-4 list-inside list-decimal space-y-2 text-sm text-[var(--text-secondary)]">
+                          <li>Install Visual Studio, CMake, Qt6, and VB-Cable (in any order)</li>
+                          <li>Reboot after installing VB-Cable</li>
+                          <li>Open Command Prompt or PowerShell</li>
+                          <li>Clone the repository: <code className="bg-[var(--background)] px-1">git clone https://github.com/kkrugley/OpenSoundDeck.git</code></li>
+                          <li>Navigate to the directory: <code className="bg-[var(--background)] px-1">cd OpenSoundDeck</code></li>
+                          <li>Switch to dev branch: <code className="bg-[var(--background)] px-1">git checkout dev</code></li>
+                          <li>Create build directory: <code className="bg-[var(--background)] px-1">mkdir build && cd build</code></li>
+                          <li>Run CMake with Visual Studio generator (replace path with your Qt installation):<br/><code className="bg-[var(--background)] px-1">cmake .. -G "Visual Studio 17 2022" -A x64</code></li>
+                          <li>Build: <code className="bg-[var(--background)] px-1">cmake --build . --config Release</code></li>
+                          <li>Run: <code className="bg-[var(--background)] px-1">cd Release && OpenSoundDeck.exe</code></li>
+                        </ol>
+                      </div>
                     </div>
                   )}
 
                   {activePlatform === 'macos' && (
-                    <div className="rounded-lg border border-[var(--border)] bg-[var(--code-bg)] p-6">
-                      <h3 className="font-bold text-[var(--text-primary)]">macOS Requirements</h3>
-                      <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                        You must install BlackHole virtual audio driver:
-                      </p>
-                      <code className="mt-2 block rounded bg-[var(--background)] p-2 text-xs">
-                        brew install blackhole-2ch
-                      </code>
-                      <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                        After installation, approve the driver in System Preferences → Security & Privacy, then reboot.
-                      </p>
+                    <div className="space-y-4">
+                      <div className="rounded-lg border border-[var(--border)] bg-[var(--code-bg)] p-6">
+                        <h3 className="font-bold text-[var(--text-primary)]">macOS Requirements</h3>
+                        <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                          Before building, install:
+                        </p>
+                        <ul className="mt-4 space-y-2 text-sm text-[var(--text-secondary)]">
+                          <li>
+                            <strong>Xcode Command Line Tools</strong> — Run:
+                            <code className="block bg-[var(--background)] px-2 py-1 mt-1 rounded text-xs">xcode-select --install</code>
+                          </li>
+                          <li>
+                            <strong>Homebrew</strong> — Install from
+                            <a href="https://brew.sh/" target="_blank" rel="noopener noreferrer" className="ml-1 underline">brew.sh</a>
+                            (required for CMake and Qt6)
+                          </li>
+                          <li>
+                            <strong>BlackHole virtual audio driver</strong> — Essential for OpenSoundDeck. Install via:
+                            <code className="block bg-[var(--background)] px-2 py-1 mt-1 rounded text-xs">brew install blackhole-2ch</code>
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div className="rounded-lg border border-[var(--border)] bg-[var(--code-bg)] p-6">
+                        <h3 className="font-bold text-[var(--text-primary)]">Step-by-Step</h3>
+                        <ol className="mt-4 list-inside list-decimal space-y-2 text-sm text-[var(--text-secondary)]">
+                          <li>Install Xcode Command Line Tools (see above)</li>
+                          <li>Install Homebrew</li>
+                          <li>Install CMake and Qt6:
+                            <code className="block bg-[var(--background)] px-2 py-1 mt-1 rounded text-xs">brew install cmake qt@6</code>
+                          </li>
+                          <li>Install BlackHole:
+                            <code className="block bg-[var(--background)] px-2 py-1 mt-1 rounded text-xs">brew install blackhole-2ch</code>
+                          </li>
+                          <li>Approve BlackHole in System Preferences → Security & Privacy, then reboot</li>
+                          <li>Open Terminal and clone the repository:
+                            <code className="block bg-[var(--background)] px-2 py-1 mt-1 rounded text-xs">git clone https://github.com/kkrugley/OpenSoundDeck.git</code>
+                          </li>
+                          <li>Navigate to directory: <code className="bg-[var(--background)] px-1">cd OpenSoundDeck</code></li>
+                          <li>Switch to dev branch: <code className="bg-[var(--background)] px-1">git checkout dev</code></li>
+                          <li>Create build directory: <code className="bg-[var(--background)] px-1">mkdir build && cd build</code></li>
+                          <li>Configure with CMake:
+                            <code className="block bg-[var(--background)] px-2 py-1 mt-1 rounded text-xs">cmake .. -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/qt@6</code>
+                          </li>
+                          <li>Build: <code className="bg-[var(--background)] px-1">cmake --build . --config Release</code></li>
+                          <li>Run: <code className="bg-[var(--background)] px-1">./OpenSoundDeck</code></li>
+                        </ol>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -99,6 +99,23 @@ export default function DownloadPage() {
           </div>
         </section>
 
+        {/* Beta Notice */}
+        <section className="w-full border-b border-[var(--border)] bg-[var(--warning)]/5 py-6">
+          <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+            <div className="rounded-lg border border-[var(--warning)]/30 bg-[var(--warning)]/10 p-4">
+              <h3 className="flex items-center gap-2 font-bold text-[var(--text-primary)]">
+                <span className="text-lg">⚠️</span> No Binary Releases Yet
+              </h3>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                Binary releases are not yet available. You'll need to build OpenSoundDeck from source.
+                Follow the <Link href="/docs#installation" className="underline hover:text-[var(--text-primary)]">
+                  step-by-step build instructions
+                </Link> in our documentation to get started.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Platform Tabs */}
         <section className="w-full border-b border-[var(--border)] py-8">
           <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">

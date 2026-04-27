@@ -185,7 +185,7 @@ export function DonationTabs() {
             {activeMethod.id === 'kofi' && (
               <div>
                 <p className="mb-4 text-sm text-[var(--text-secondary)]">
-                  Buy us a coffee on Ko-fi. Your support helps keep the project alive 
+                  Buy us a coffee on Ko-fi. Your support helps keep the project alive
                   and motivates us to add new features.
                 </p>
                 <a

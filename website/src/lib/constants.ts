@@ -116,7 +116,7 @@ export const FAQ_ITEMS = [
   },
   {
     question: 'Is it free to use?',
-    answer: 'Yes! OpenSoundDeck is completely free and open-source under the MIT License. No ads, no paywalls, just pure functionality.',
+    answer: 'Yes! OpenSoundDeck is completely free and open-source under the GPL-3.0 license. No ads, no paywalls, just pure functionality.',
   },
   {
     question: 'Can I use it with Discord/Zoom/Teams?',
@@ -156,8 +156,6 @@ export const NAV_LINKS = [
 export const FOOTER_LINKS = {
   social: [
     { name: 'GitHub', href: GITHUB_URL },
-    { name: 'Discord', href: 'https://discord.gg/opensounddeck' },
-    { name: 'X', href: 'https://x.com/opensounddeck' },
   ],
   docs: [
     { name: 'Documentation', href: '/docs' },
@@ -194,13 +192,14 @@ export const DONATION_METHODS = [
   {
     id: 'crypto',
     name: 'Cryptocurrency',
-    description: 'BTC, ETH, USDC, and more',
+    description: 'Bitcoin, Ethereum, Solana, TON',
     icon: 'CurrencyBtc',
     color: '#F7931A',
     wallets: [
-      { name: 'Bitcoin (BTC)', address: 'bc1qexample...', network: 'Bitcoin' },
-      { name: 'Ethereum (ETH)', address: '0xexample...', network: 'ERC-20' },
-      { name: 'USDC', address: '0xexample...', network: 'ERC-20' },
+      { name: 'Bitcoin (BTC)', address: 'bc1qqcswcnayyx8ct7qs4mzh89zgxu35ha3m02zawu', network: 'Bitcoin' },
+      { name: 'Ethereum (ETH)', address: '0x0070d21876adb142b4e65D6bfc38fBb294CF46Ab', network: 'ERC-20' },
+      { name: 'Solana (SOL)', address: 'B7FjSi7qXNvXvjdycFx7zXGtJKsPQ8tRDhdLyVNZHmrr', network: 'Solana' },
+      { name: 'Toncoin (TON)', address: 'UQCZvkt3Wfi8JVM6x5cP2urabpwQ6mWDEEFwWUalVyKyzEQg', network: 'TON' },
     ],
   },
   {
@@ -209,7 +208,7 @@ export const DONATION_METHODS = [
     description: 'Quick and easy donations',
     icon: 'PaypalLogo',
     color: '#00457C',
-    url: 'https://paypal.me/opensounddeck',
+    url: 'https://www.paypal.com/paypalme/kkrugley',
   },
   {
     id: 'kofi',
@@ -217,6 +216,6 @@ export const DONATION_METHODS = [
     description: 'Buy me a coffee',
     icon: 'Coffee',
     color: '#FF5E5B',
-    url: 'https://ko-fi.com/opensounddeck',
+    url: 'https://ko-fi.com/U7U41YK8CX',
   },
 ];

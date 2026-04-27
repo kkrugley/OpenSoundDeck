@@ -6,9 +6,9 @@ import LegalContent from './_page';
 const ogImage = buildOgUrl({
   title: 'Privacy Policy & Terms',
   description:
-    'OpenSoundDeck collects zero data. All audio processing is local. MIT-licensed, transparent, and open source.',
+    'OpenSoundDeck collects zero data. All audio processing is local. GPL-3.0 licensed, transparent, and open source.',
   label: 'Legal',
-  tags: ['Privacy First', 'Zero Telemetry', 'MIT License'],
+  tags: ['Privacy First', 'Zero Telemetry', 'GPL-3.0 License'],
 });
 
 export const metadata: Metadata = {
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Privacy Policy & Terms — OpenSoundDeck',
     description:
-      'OpenSoundDeck collects zero data. All audio processing is local. MIT-licensed, transparent, and open source.',
+      'OpenSoundDeck collects zero data. All audio processing is local. GPL-3.0 licensed, transparent, and open source.',
     url: `${SITE_URL}/legal`,
     siteName: 'OpenSoundDeck',
     type: 'website',
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Legal — OpenSoundDeck',
-    description: 'Privacy policy, terms of service, and MIT license details.',
+    description: 'Privacy policy, terms of service, and GPL-3.0 license details.',
     images: [ogImage],
   },
 };

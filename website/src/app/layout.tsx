@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { JetBrains_Mono } from 'next/font/google';
 import { I18nProvider } from '@/components/I18nProvider';
 import { SITE_URL } from '@/lib/constants';
@@ -14,7 +15,7 @@ const jetbrainsMono = JetBrains_Mono({
 const defaultOgImage = buildOgUrl({
   title: 'The Open Source Soundboard',
   description: 'Inject audio directly into your microphone with global hotkeys. Cross-platform, free.',
-  tags: ['Open Source', 'Cross-Platform', 'MIT License'],
+  tags: ['Open Source', 'Cross-Platform', 'GPL-3.0 License'],
 });
 
 export const metadata: Metadata = {
@@ -72,6 +73,22 @@ export default function RootLayout({
         <I18nProvider>
           {children}
         </I18nProvider>
+        <Script
+          src="https://storage.ko-fi.com/cdn/scripts/overlay-widget.js"
+          strategy="lazyOnload"
+        />
+        <Script strategy="lazyOnload">
+          {`
+            if (typeof kofiWidgetOverlay !== 'undefined') {
+              kofiWidgetOverlay.draw('U7U41YK8CX', {
+                'type': 'floating-chat',
+                'floating-chat.donateButton.text': 'Support me',
+                'floating-chat.donateButton.background-color': '#ff5f5f',
+                'floating-chat.donateButton.text-color': '#fff'
+              });
+            }
+          `}
+        </Script>
       </body>
     </html>
   );
