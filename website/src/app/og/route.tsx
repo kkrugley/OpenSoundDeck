@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
 
-const SQUIRCLE = 'M 198 100 C 198 3 197 2 100 2 C 3 2 2 3 2 100 C 2 197 3 198 100 198 C 197 198 198 197 198 100 Z';
+const SQUIRCLE = 'M 198 100 C 198 46 154 2 100 2 C 46 2 2 46 2 100 C 2 154 46 198 100 198 C 154 198 198 154 198 100 Z';
 
 const ICON =
   'M 1.04 -0.065 L 40.429 -0.84 L 40.02 39.627 L 0.258 40.029 L 1.04 -0.065 Z ' +
