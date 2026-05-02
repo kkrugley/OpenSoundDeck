@@ -73,22 +73,7 @@ export default function RootLayout({
         <I18nProvider>
           {children}
         </I18nProvider>
-        <Script
-          src="https://storage.ko-fi.com/cdn/scripts/overlay-widget.js"
-          strategy="lazyOnload"
-        />
-        <Script strategy="lazyOnload">
-          {`
-            if (typeof kofiWidgetOverlay !== 'undefined') {
-              kofiWidgetOverlay.draw('U7U41YK8CX', {
-                'type': 'floating-chat',
-                'floating-chat.donateButton.text': 'Support me',
-                'floating-chat.donateButton.background-color': '#ff5f5f',
-                'floating-chat.donateButton.text-color': '#fff'
-              });
-            }
-          `}
-        </Script>
+        
       </body>
     </html>
   );
